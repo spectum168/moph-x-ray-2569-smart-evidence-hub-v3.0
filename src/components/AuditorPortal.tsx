@@ -161,12 +161,16 @@ export default function AuditorPortal({ onLogoutAuditor, onInspectHospital, show
                 คัดลอกลิงก์เฉพาะนี้ส่งให้กับหน่วยงาน/โรงพยาบาลในเครือเพื่อระบบจะตั้งให้โรงพยาบาลดังกล่าวเป็นดาวน์ไลน์สายงานตรงในสายการดูแลตรวจสอบของคุณอัติโนมัติเมื่อเขากรอกสมัคร!
               </p>
               <div className="bg-[#21322f] px-3 py-2 rounded-lg border border-[#253734] flex items-center justify-between gap-2 max-w-xl font-mono text-[11px] text-teal-200 overflow-x-auto truncate">
-                <span>{window.location.origin + "/?ref=" + username + "&mode=register"}</span>
+                <span>{(() => {
+                  const baseUrl = window.location.origin + window.location.pathname.replace(/\/index\.html$/, "").replace(/\/?$/, "/");
+                  return baseUrl + "?ref=" + username + "&mode=register";
+                })()}</span>
               </div>
             </div>
             <button
               onClick={() => {
-                const inviteUrl = window.location.origin + "/?ref=" + username + "&mode=register";
+                const baseUrl = window.location.origin + window.location.pathname.replace(/\/index\.html$/, "").replace(/\/?$/, "/");
+                const inviteUrl = baseUrl + "?ref=" + username + "&mode=register";
                 navigator.clipboard.writeText(inviteUrl);
                 showToast("📋 คัดลอกลิงค์สมัครดาวน์ไลน์เรียบร้อยแล้ว!", "success");
               }}

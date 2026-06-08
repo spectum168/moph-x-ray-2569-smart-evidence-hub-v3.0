@@ -1158,7 +1158,8 @@ export default function AdminPortal({ onLogoutAdmin, onInspectHospital, onHospit
                   {auditors.map((auditor) => {
                     const isAuditorEditing = editingAuditorUsername === auditor.username;
                     const currentUsernameValue = isAuditorEditing ? editAuditorForm.username : auditor.username;
-                    const refereeUrl = window.location.origin + "/?ref=" + currentUsernameValue + "&mode=register";
+                    const baseUrl = window.location.origin + window.location.pathname.replace(/\/index\.html$/, "").replace(/\/?$/, "/");
+                    const refereeUrl = baseUrl + "?ref=" + currentUsernameValue + "&mode=register";
                     const countTeam = hospitals.filter(h => (h as any).upline === auditor.username || (auditor.username === "auditor" && !(h as any).upline)).length;
                     
                     return (
