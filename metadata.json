@@ -1,0 +1,6 @@
+{
+  "name": "MOPH X-ray 2569 Smart Evidence Hub v3.0",
+  "description": "Smart self-assessment dashboard and digital evidence hub for medical radiation clinics preparing for hospital accreditation and MOPH X-ray standard verification.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
