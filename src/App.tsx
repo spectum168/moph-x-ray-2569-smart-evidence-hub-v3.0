@@ -28,7 +28,8 @@ import {
   Database,
   Grid,
   TrendingUp,
-  FileCheck2
+  FileCheck2,
+  X
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { AssessmentItem, AssessmentStatus } from "./types";
@@ -201,6 +202,7 @@ export default function App() {
 
   // Selectors/Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inspectorRef = useRef<HTMLDivElement>(null);
 
   // Generate headers for hospital context
   const getHeaders = () => {
@@ -387,6 +389,22 @@ export default function App() {
       setAiQuery("");
     }
   }, [selectedId, selectedItem]);
+
+  // Auto-scroll the evidence panel to the top or scroll it into view on smaller viewports
+  useEffect(() => {
+    if (selectedId && inspectorRef.current) {
+      if (window.innerWidth < 1024) {
+        // Scroll smoothly to the panel on mobile/tablet viewports
+        inspectorRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        // Scroll inside the form workspace back to the top on desktop
+        const innerScrollable = inspectorRef.current.querySelector(".overflow-y-auto");
+        if (innerScrollable) {
+          innerScrollable.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      }
+    }
+  }, [selectedId]);
 
   // Extract unique main categories
   const categoriesList: string[] = [
@@ -1537,9 +1555,9 @@ export default function App() {
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden min-h-0">
           
           {/* ==========================================
-              LEFT COLUMN: SEARCH, LISTING & FILTERS (col-span-7)
+              LEFT COLUMN: SEARCH, LISTING & FILTERS (col-span-12 full width for Style 2)
               ========================================== */}
-          <div className="lg:col-span-7 flex flex-col bg-white border border-gray-200 rounded-2xl overflow-hidden min-h-0 shadow-sm">
+          <div className="lg:col-span-12 flex flex-col bg-white border border-gray-200 rounded-2xl overflow-hidden min-h-0 shadow-sm">
             
             {/* Header / Filter Toolbar */}
             <div className="p-4 bg-white border-b border-gray-150 space-y-3 shrink-0">
@@ -1824,253 +1842,269 @@ export default function App() {
           </div>
 
           {/* ==========================================
-              RIGHT COLUMN: ACTIVE ITEM INSPECTOR & EDIT FORM (col-span-5)
+              RIGHT COLUMN: ACTIVE ITEM INSPECTOR & EDIT FORM (Slide-Over Drawer v2 - Style 2)
               ========================================== */}
-          <div className="lg:col-span-5 flex flex-col bg-white border border-gray-200 rounded-2xl overflow-hidden min-h-0 shadow-md">
-            
-            {/* Conditional placeholder if not selected */}
-            {!selectedItem ? (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-gray-50/50">
-                <FileCheck2 className="w-12 h-12 text-[#5A5A40]/40 mb-2.5" />
-                <p className="text-sm font-semibold text-gray-700">ยังไม่เลือกข้อประเมิน</p>
-                <p className="text-xs text-gray-400 mt-1 max-w-xs leading-relaxed">
-                  กรุณาคลิกเลือกข้อสอบถามหรือรายการประเมินทางรังสีในรายการทางซ้ายมือ เพื่อตรวจสอบข้อมูล ป้อนหลักฐาน และระบุบันทึกผู้ตรวจประเมิน
-                </p>
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col min-h-0 bg-white">
-                
-                {/* Fixed Inspector Title Banner */}
-                <div className="p-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between shrink-0 font-sans">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-mono text-sm font-extrabold text-[#5A5A40] bg-white border border-gray-200 px-2.5 py-1 rounded">
-                      {selectedItem.Item_ID}
-                    </span>
-                    <div>
-                      <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">แผงจัดการข้อมูลหลักฐานประเมิน</h4>
-                      <p className="text-[10px] text-gray-500 truncate max-w-[150px] sm:max-w-[200px]">
-                        {selectedItem.Sub_Category}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Action buttons with edit definition and delete */}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      onClick={() => {
-                        setEditingItemID(selectedItem.Item_ID);
-                        setEditItemCategory(selectedItem.Main_Category);
-                        setEditItemSubCategory(selectedItem.Sub_Category);
-                        setEditItemID(selectedItem.Item_ID);
-                        setEditItemCriteria(selectedItem.Criteria_Detail);
-                        setEditItemSuccess(selectedItem.Success_Indicator);
-                        setShowEditItemModal(true);
-                      }}
-                      className="bg-amber-100 hover:bg-amber-200 text-amber-800 border border-amber-200 font-bold px-2.5 py-1 rounded-md text-[10px] transition-all cursor-pointer flex items-center justify-center"
-                      title="แก้ไขเกณฑ์มาตรฐาน / ข้อกำหนดเป้าหมาย"
-                    >
-                      ✏️ แก้ไขเกณฑ์
-                    </button>
-                    <button
-                      onClick={() => handleDeleteItem(selectedItem.Item_ID)}
-                      className="bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-200 font-bold px-2.5 py-1 rounded-md text-[10px] transition-all cursor-pointer flex items-center justify-center"
-                      title="ลบเกณฑ์มาตรฐานข้อนี้ออกถาวร"
-                    >
-                      🗑️ ลบข้อนี้
-                    </button>
-                  </div>
-                </div>
+          <AnimatePresence>
+            {selectedItem && (
+              <>
+                {/* Blur backdrop mask to focus attention */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 0.4 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setSelectedId(null)}
+                  className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-[80] cursor-pointer"
+                />
 
-                {/* Scrollable Form Workspace of active item */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white">
-                  
-                  {/* Part 1: Green Box for Criteria & Success Indicator & Hyperlink Buttons */}
-                  <div className="bg-emerald-50/50 border border-emerald-150 p-4 rounded-xl space-y-3 shadow-inner">
+                {/* Sliding side drawer */}
+                <motion.div
+                  ref={inspectorRef}
+                  initial={{ x: "100%", opacity: 0.9 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: "100%", opacity: 0.9 }}
+                  transition={{ type: "spring", damping: 26, stiffness: 220 }}
+                  className="fixed top-0 right-0 h-full w-full max-w-xl bg-white shadow-2xl z-[90] overflow-hidden flex flex-col border-l border-gray-200"
+                >
+                  <div className="flex-1 flex flex-col min-h-0 bg-white">
                     
-                    <div className="flex items-start justify-between">
-                      <span className="text-[9px] font-extrabold text-emerald-700 bg-emerald-105 border border-emerald-250 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                        ตัวชี้วัดความสำเร็จ (Success Indicator)
-                      </span>
-                    </div>
-
-                    <p className="text-[11px] text-gray-800 leading-relaxed font-sans bg-white p-2.5 rounded-lg border border-gray-150">
-                      {selectedItem.Success_Indicator || "ไม่ได้ระบุความคาดหวังเฉพาะ"}
-                    </p>
-
-                    <div className="text-[11px] text-gray-700">
-                      <span className="font-bold text-emerald-705 text-emerald-700">เกณฑ์ประเมินจริง:</span> {selectedItem.Criteria_Detail}
-                    </div>
-
-                    {/* 📂 Automatic Yellow Hyperlinks Buttons for Attached Google Drive Links! */}
-                    <div className="pt-2 border-t border-emerald-900/40 space-y-1.5">
-                      <span className="block text-[10px] font-bold text-gray-500">
-                        🔗 ลิงก์แฟ้มประจักษ์หลักฐาน (เปิดใน Tab ใหม่):
-                      </span>
-
-                      {selectedItem.Evidence_Link && selectedItem.Evidence_Link.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
-                          {selectedItem.Evidence_Link.map((link, lIdx) => {
-                            // Ensure typical absolute link protocol is satisfied
-                            const hrefVal = link.startsWith("http") ? link : `https://${link}`;
-                            return (
-                              <a
-                                key={lIdx}
-                                href={hrefVal}
-                                target="_blank"
-                                rel="noopener noreferrer referrer"
-                                className="bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-[11px] py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all text-center group truncate shadow"
-                                title={link}
-                              >
-                                <ExternalLink className="w-3.5 h-3.5 shrink-0 group-hover:scale-110" />
-                                <span className="truncate">📂 เปิดหลักฐานแฟ้มที่ {lIdx + 1}</span>
-                              </a>
-                            );
-                          })}
+                    {/* Fixed Inspector Title Banner */}
+                    <div className="p-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between shrink-0 font-sans">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-mono text-sm font-extrabold text-[#5A5A40] bg-white border border-gray-200 px-2.5 py-1 rounded">
+                          {selectedItem.Item_ID}
+                        </span>
+                        <div>
+                          <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">แผงจัดการข้อมูลหลักฐานประเมิน</h4>
+                          <p className="text-[10px] text-gray-500 truncate max-w-[150px] sm:max-w-[180px]">
+                            {selectedItem.Sub_Category}
+                          </p>
                         </div>
-                      ) : (
-                        <div className="text-amber-700 text-[11px] font-semibold bg-amber-50 border border-amber-200 p-2 rounded flex items-center justify-center gap-1">
-                          <span>📭 ข้อนี้ยังไม่ได้แนบลิงก์หลักฐาน</span>
-                        </div>
-                      )}
-                    </div>
-
-                  </div>
-
-                  {/* Part 2: Interactive Controls Form */}
-                  <div className="space-y-3.5 pt-1">
-                    
-                    {/* Status Pill Select Range */}
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1.5">
-                        สถานะความพร้อมรับการตรวจ (ล็อกตามมาตรฐาน)
-                      </label>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {[
-                          { val: "🟢 พร้อมรับตรวจ", c: "bg-emerald-50 border-emerald-250 text-emerald-700 hover:bg-emerald-100" },
-                          { val: "🟡 อยู่ระหว่างปรับปรุง", c: "bg-amber-50 border-amber-250 text-amber-700 hover:bg-amber-100" },
-                          { val: "🔴 ยังไม่พร้อม", c: "bg-rose-50 border-rose-205 text-rose-700 hover:bg-rose-100" }
-                        ].map((statOpt) => {
-                          const active = editedStatus === statOpt.val;
-                          return (
-                            <button
-                              key={statOpt.val}
-                              type="button"
-                              onClick={() => setEditedStatus(statOpt.val as AssessmentStatus)}
-                              className={`py-2 px-1 rounded-lg border text-center text-xs font-bold transition-all cursor-pointer ${
-                                active
-                                  ? statOpt.val === "🟢 พร้อมรับตรวจ"
-                                    ? "bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-900/20"
-                                    : statOpt.val === "🟡 อยู่ระหว่างปรับปรุง"
-                                    ? "bg-amber-500 border-amber-400 text-slate-950 shadow-lg shadow-amber-900/20"
-                                    : "bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-950/20"
-                                  : statOpt.c
-                              }`}
-                            >
-                              {statOpt.val}
-                            </button>
-                          );
-                        })}
                       </div>
-                    </div>
-
-                    {/* Removed Responsible_Person input field */}
-
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label className="block text-xs font-semibold text-gray-500 flex items-center gap-1">
-                          <span>กล่องลิงก์อ้างอิง Google Drive (มากกว่า 1 ลิงก์)</span>
-                        </label>
+                      
+                      {/* Action buttons with edit definition, delete, and close panel */}
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <button
-                          type="button"
-                          onClick={handleAddLinkField}
-                          className="bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 text-[10px] font-bold px-2.5 py-1 rounded flex items-center gap-1 transition-colors cursor-pointer"
+                          onClick={() => {
+                            setEditingItemID(selectedItem.Item_ID);
+                            setEditItemCategory(selectedItem.Main_Category);
+                            setEditItemSubCategory(selectedItem.Sub_Category);
+                            setEditItemID(selectedItem.Item_ID);
+                            setEditItemCriteria(selectedItem.Criteria_Detail);
+                            setEditItemSuccess(selectedItem.Success_Indicator);
+                            setShowEditItemModal(true);
+                          }}
+                          className="bg-amber-100 hover:bg-amber-200 text-amber-800 border border-amber-200 font-bold px-2 py-1 rounded-md text-[10px] transition-all cursor-pointer flex items-center justify-center text-center leading-none"
+                          title="แก้ไขเกณฑ์มาตรฐาน / ข้อกำหนดเป้าหมาย"
                         >
-                          <Plus className="w-3 h-3 text-gray-600" />
-                          <span>➕ เพิ่มลิงก์อื่นเพิ่ม</span>
+                          ✏️ แก้ไขเกณฑ์
+                        </button>
+                        <button
+                          onClick={() => handleDeleteItem(selectedItem.Item_ID)}
+                          className="bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-200 font-bold px-2 py-1 rounded-md text-[10px] transition-all cursor-pointer flex items-center justify-center text-center leading-none"
+                          title="ลบเกณฑ์มาตรฐานข้อนี้ออกถาวร"
+                        >
+                          🗑️ ลบข้อนี้
+                        </button>
+                        <button
+                          onClick={() => setSelectedId(null)}
+                          className="bg-gray-150 hover:bg-gray-200 text-gray-700 border border-gray-350 font-bold px-2.5 py-1 rounded-md text-[10px] transition-all cursor-pointer flex items-center justify-center gap-1 text-center"
+                          title="ปิดแผงจัดการนี้"
+                        >
+                          <X className="w-3.5 h-3.5 text-gray-600" />
+                          <span>ปิดแผง</span>
                         </button>
                       </div>
+                    </div>
 
-                      {editedLinks.length === 0 ? (
-                        <div className="p-3 text-center rounded-lg border border-dashed border-gray-250 bg-gray-50 text-[11px] text-gray-500">
-                          ยังไม่มีข้อมูลลิงก์ แนะนำให้คลิกปุ่มด้านขวาบนเพื่อกรอกลิงก์ Google Drive แฟ้มหลักฐาน
+                    {/* Scrollable Form Workspace of active item */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white font-sans">
+                      
+                      {/* Part 1: Green Box for Criteria & Success Indicator & Hyperlink Buttons */}
+                      <div className="bg-emerald-50/50 border border-emerald-150 p-4 rounded-xl space-y-3 shadow-inner">
+                        
+                        <div className="flex items-start justify-between">
+                          <span className="text-[9px] font-extrabold text-emerald-700 bg-emerald-105 border border-emerald-250 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                            ตัวชี้วัดความสำเร็จ (Success Indicator)
+                          </span>
                         </div>
-                      ) : (
-                        <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                          {editedLinks.map((link, idx) => (
-                            <div key={idx} className="flex items-center space-x-1.5">
-                              <span className="font-mono text-[10px] text-gray-400 shrink-0 select-none w-4">
-                                #{idx + 1}
-                              </span>
-                              <input
-                                type="url"
-                                value={link}
-                                onChange={(e) => handleLinkChange(idx, e.target.value)}
-                                placeholder="https://drive.google.com/..."
-                                className="flex-1 bg-white border border-gray-300 text-gray-800 px-2 py-1.5 rounded-lg text-xs placeholder:text-gray-400 focus:ring-1 focus:ring-teal-555 focus:outline-none"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveLinkField(idx)}
-                                className="p-2 bg-gray-100 hover:bg-rose-50 hover:text-rose-600 text-gray-500 rounded-lg text-xs border border-gray-200 cursor-pointer shrink-0 transition-all"
-                                title="ลบลิงก์ย่อยนี้"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+
+                        <p className="text-[11px] text-gray-800 leading-relaxed font-sans bg-white p-2.5 rounded-lg border border-gray-150">
+                          {selectedItem.Success_Indicator || "ไม่ได้ระบุความคาดหวังเฉพาะ"}
+                        </p>
+
+                        <div className="text-[11px] text-gray-700">
+                          <span className="font-bold text-emerald-705 text-emerald-700">เกณฑ์ประเมินจริง:</span> {selectedItem.Criteria_Detail}
+                        </div>
+
+                        {/* 📂 Automatic Yellow Hyperlinks Buttons for Attached Google Drive Links! */}
+                        <div className="pt-2 border-t border-emerald-900/40 space-y-1.5">
+                          <span className="block text-[10px] font-bold text-gray-500">
+                            🔗 ลิงก์แฟ้มประจักษ์หลักฐาน (เปิดใน Tab ใหม่):
+                          </span>
+
+                          {selectedItem.Evidence_Link && selectedItem.Evidence_Link.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
+                              {selectedItem.Evidence_Link.map((link, lIdx) => {
+                                // Ensure typical absolute link protocol is satisfied
+                                const hrefVal = link.startsWith("http") ? link : `https://${link}`;
+                                return (
+                                  <a
+                                    key={lIdx}
+                                    href={hrefVal}
+                                    target="_blank"
+                                    rel="noopener noreferrer referrer"
+                                    className="bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-[11px] py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all text-center group truncate shadow"
+                                    title={link}
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5 shrink-0 group-hover:scale-110" />
+                                    <span className="truncate">📂 เปิดหลักฐานแฟ้มที่ {lIdx + 1}</span>
+                                  </a>
+                                );
+                              })}
                             </div>
-                          ))}
+                          ) : (
+                            <div className="text-amber-700 text-[11px] font-semibold bg-amber-50 border border-amber-200 p-2 rounded flex items-center justify-center gap-1">
+                              <span>📭 ข้อนี้ยังไม่ได้แนบลิงก์หลักฐาน</span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
 
-                    {/* Auditor Comment */}
-                    <div>
-                      <label className="block text-xs font-bold text-sky-700 mb-1.5 flex items-center gap-1">
-                        <MessageSquare className="w-3.5 h-3.5 text-sky-600" />
-                        <span>ความคิดเห็นผู้ตรวจประเมิน (Auditor Comment)</span>
-                      </label>
-                      <textarea
-                        value={editedComment}
-                        onChange={(e) => setEditedComment(e.target.value)}
-                        placeholder="สำหรับคณะผู้ตรวจประเมินใช้บันทึกความคิดเห็น ข้อบกพร่อง หรือประเด็นที่ต้องเสนอแนะ..."
-                        rows={3.5}
-                        className="w-full bg-sky-50/50 border border-sky-200 text-gray-800 p-2.5 rounded-lg text-xs focus:ring-1 focus:ring-sky-500 focus:outline-none placeholder:text-gray-450"
-                      />
-                    </div>
+                      </div>
 
-                    {/* Last Update (Yellow Tinted Display) */}
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between text-[11px] text-amber-800 font-mono">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 shrink-0" />
-                        <span>วันเวลาอัปเดตล่าสุด (Last_Update):</span>
-                      </span>
-                      <span className="font-bold underline">
-                        {formatDateTime(selectedItem.Last_Update)}
-                      </span>
-                    </div>
+                      {/* Part 2: Interactive Controls Form */}
+                      <div className="space-y-3.5 pt-1">
+                        
+                        {/* Status Pill Select Range */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-400 mb-1.5">
+                            สถานะความพร้อมรับการตรวจ (ล็อกตามมาตรฐาน)
+                          </label>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {[
+                              { val: "🟢 พร้อมรับตรวจ", c: "bg-emerald-50 border-emerald-250 text-emerald-700 hover:bg-emerald-100" },
+                              { val: "🟡 อยู่ระหว่างปรับปรุง", c: "bg-amber-50 border-amber-250 text-amber-700 hover:bg-amber-100" },
+                              { val: "🔴 ยังไม่พร้อม", c: "bg-rose-50 border-rose-205 text-rose-700 hover:bg-rose-100" }
+                            ].map((statOpt) => {
+                              const active = editedStatus === statOpt.val;
+                              return (
+                                <button
+                                  key={statOpt.val}
+                                  type="button"
+                                  onClick={() => setEditedStatus(statOpt.val as AssessmentStatus)}
+                                  className={`py-2 px-1 rounded-lg border text-center text-xs font-bold transition-all cursor-pointer ${
+                                    active
+                                      ? statOpt.val === "🟢 พร้อมรับตรวจ"
+                                        ? "bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-900/20"
+                                        : statOpt.val === "🟡 อยู่ระหว่างปรับปรุง"
+                                        ? "bg-amber-500 border-amber-400 text-slate-950 shadow-lg shadow-amber-900/20"
+                                        : "bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-950/20"
+                                      : statOpt.c
+                                  }`}
+                                >
+                                  {statOpt.val}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
 
-                    {/* Big Action Save Button */}
-                    <button
-                      type="button"
-                      onClick={handleSaveItem}
-                      disabled={isSaving}
-                      className="w-full bg-[#5A5A40] hover:bg-[#4a4a35] disabled:bg-gray-300 text-white text-xs font-extrabold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow transition-all cursor-pointer"
-                    >
-                      {isSaving ? (
-                        <Loader className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Save className="w-4 h-4" />
-                      )}
-                      <span>💾 บันทึกข้อมูลเกณฑ์ {selectedItem.Item_ID} ลงชีทจำลอง</span>
-                    </button>
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="block text-xs font-semibold text-gray-500 flex items-center gap-1">
+                              <span>กล่องลิงก์อ้างอิง Google Drive (มากกว่า 1 ลิงก์)</span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={handleAddLinkField}
+                              className="bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 text-[10px] font-bold px-2.5 py-1 rounded flex items-center gap-1 transition-colors cursor-pointer"
+                            >
+                              <Plus className="w-3 h-3 text-gray-600" />
+                              <span>➕ เพิ่มลิงก์อื่นเพิ่ม</span>
+                            </button>
+                          </div>
+
+                          {editedLinks.length === 0 ? (
+                            <div className="p-3 text-center rounded-lg border border-dashed border-gray-250 bg-gray-50 text-[11px] text-gray-500">
+                              ยังไม่มีข้อมูลลิงก์ แนะนำให้คลิกปุ่มด้านขวาบนเพื่อกรอกลิงก์ Google Drive แฟ้มหลักฐาน
+                            </div>
+                          ) : (
+                            <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                              {editedLinks.map((link, idx) => (
+                                <div key={idx} className="flex items-center space-x-1.5">
+                                  <span className="font-mono text-[10px] text-gray-400 shrink-0 select-none w-4">
+                                    #{idx + 1}
+                                  </span>
+                                  <input
+                                    type="url"
+                                    value={link}
+                                    onChange={(e) => handleLinkChange(idx, e.target.value)}
+                                    placeholder="https://drive.google.com/..."
+                                    className="flex-1 bg-white border border-gray-300 text-gray-800 px-2 py-1.5 rounded-lg text-xs placeholder:text-gray-400 focus:ring-1 focus:ring-teal-555 focus:outline-none"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveLinkField(idx)}
+                                    className="p-2 bg-gray-100 hover:bg-rose-50 hover:text-rose-600 text-gray-500 rounded-lg text-xs border border-gray-200 cursor-pointer shrink-0 transition-all"
+                                    title="ลบลิงก์ย่อยนี้"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Auditor Comment */}
+                        <div>
+                          <label className="block text-xs font-bold text-sky-700 mb-1.5 flex items-center gap-1">
+                            <MessageSquare className="w-3.5 h-3.5 text-sky-600" />
+                            <span>ความคิดเห็นผู้ตรวจประเมิน (Auditor Comment)</span>
+                          </label>
+                          <textarea
+                            value={editedComment}
+                            onChange={(e) => setEditedComment(e.target.value)}
+                            placeholder="สำหรับคณะผู้ตรวจประเมินใช้บันทึกความคิดเห็น ข้อบกพร่อง หรือประเด็นที่ต้องเสนอแนะ..."
+                            rows={3.5}
+                            className="w-full bg-sky-50/50 border border-sky-200 text-gray-800 p-2.5 rounded-lg text-xs focus:ring-1 focus:ring-sky-500 focus:outline-none placeholder:text-gray-450"
+                          />
+                        </div>
+
+                        {/* Last Update (Yellow Tinted Display) */}
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between text-[11px] text-amber-800 font-mono">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 shrink-0" />
+                            <span>วันเวลาอัปเดตล่าสุด (Last_Update):</span>
+                          </span>
+                          <span className="font-bold underline">
+                            {formatDateTime(selectedItem.Last_Update)}
+                          </span>
+                        </div>
+
+                        {/* Big Action Save Button */}
+                        <button
+                          type="button"
+                          onClick={handleSaveItem}
+                          disabled={isSaving}
+                          className="w-full bg-[#5A5A40] hover:bg-[#4a4a35] disabled:bg-gray-300 text-white text-xs font-extrabold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow transition-all cursor-pointer"
+                        >
+                          {isSaving ? (
+                            <Loader className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Save className="w-4 h-4" />
+                          )}
+                          <span>💾 บันทึกข้อมูลเกณฑ์ {selectedItem.Item_ID} ลงชีทจำลอง</span>
+                        </button>
+
+                      </div>
+
+                    </div>
 
                   </div>
-
-                </div>
-
-              </div>
+                </motion.div>
+              </>
             )}
-
-          </div>
+          </AnimatePresence>
 
         </div>
         )}
