@@ -1657,20 +1657,56 @@ export default function App() {
                   const readyInCat = assessments.filter(
                     (i) => (cat === "ทั้งหมด" || i.Main_Category === cat) && i.Status === "🟢 พร้อมรับตรวจ"
                   ).length;
+                  const inProgressInCat = assessments.filter(
+                    (i) => (cat === "ทั้งหมด" || i.Main_Category === cat) && i.Status === "🟡 อยู่ระหว่างปรับปรุง"
+                  ).length;
                   const displayLabel = cat === "ทั้งหมด" ? "💡 ดูทุกหมวด" : getCleanCategoryNumRef(cat);
+
+                  // Decide styles recursively based on completion status
+                  let buttonStyle = "";
+                  let pillStyle = "";
+
+                  if (cat === "ทั้งหมด") {
+                    buttonStyle = isSelected
+                      ? "bg-[#5A5A40]/10 text-[#5A5A40] border-[#5A5A40]/30 font-semibold shadow-inner"
+                      : "bg-gray-50 text-gray-650 border-gray-200 hover:bg-gray-100 hover:text-gray-85";
+                    pillStyle = isSelected
+                      ? "bg-[#5A5A40]/25 text-[#5A5A40] font-bold"
+                      : "bg-gray-250 text-gray-600";
+                  } else if (itemInCat > 0 && readyInCat === itemInCat) {
+                    // สีเขียว: ตอบครบแล้ว (ทุกข้อเป็น 🟢 พร้อมรับตรวจ)
+                    buttonStyle = isSelected
+                      ? "bg-emerald-50 text-emerald-800 border-emerald-400 font-bold ring-1 ring-emerald-400/30 shadow-xs"
+                      : "bg-emerald-50/40 text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-850 hover:border-emerald-300";
+                    pillStyle = isSelected
+                      ? "bg-emerald-200 text-emerald-900 font-bold"
+                      : "bg-emerald-100/70 text-emerald-800";
+                  } else if (itemInCat > 0 && (readyInCat > 0 || inProgressInCat > 0)) {
+                    // สีเหลือง: ตอบบางส่วน (มีข้อ 🟢 หรือ 🟡 บันทึกไว้แล้ว)
+                    buttonStyle = isSelected
+                      ? "bg-amber-50 text-amber-800 border-amber-400 font-bold ring-1 ring-amber-400/30 shadow-xs"
+                      : "bg-amber-50/45 text-amber-700 border-amber-200 hover:bg-amber-50 hover:text-amber-850 hover:border-amber-300";
+                    pillStyle = isSelected
+                      ? "bg-amber-200 text-amber-900 font-bold"
+                      : "bg-amber-100/70 text-amber-800";
+                  } else {
+                    // คงสีเดิม (ยังไม่ได้ตอบ: ทุกข้อเป็น 🔴 ยังไม่พร้อม)
+                    buttonStyle = isSelected
+                      ? "bg-[#5A5A40]/10 text-[#5A5A40] border-[#5A5A40]/30 font-semibold shadow-inner"
+                      : "bg-gray-50 text-gray-650 border-gray-200 hover:bg-gray-100 hover:text-gray-85";
+                    pillStyle = isSelected
+                      ? "bg-[#5A5A40]/25 text-[#5A5A40] font-bold"
+                      : "bg-gray-250 text-gray-600";
+                  }
 
                   return (
                     <button
                       key={idx}
                       onClick={() => setSelectedCategoryFilter(cat)}
-                      className={`shrink-0 text-xs px-2.5 py-1 rounded-full border transition-all flex items-center space-x-1 cursor-pointer ${
-                        isSelected
-                          ? "bg-[#5A5A40]/10 text-[#5A5A40] border-[#5A5A40]/30 font-semibold"
-                          : "bg-gray-50 text-gray-650 border-gray-200 hover:bg-gray-100 hover:text-gray-85"
-                      }`}
+                      className={`shrink-0 text-xs px-2.5 py-1 rounded-full border transition-all flex items-center space-x-1 cursor-pointer ${buttonStyle}`}
                     >
                       <span>{displayLabel}</span>
-                      <span className="font-mono text-[9px] bg-gray-250 text-gray-600 px-1 rounded-md">
+                      <span className={`font-mono text-[9px] px-1 rounded-md ${pillStyle}`}>
                         {readyInCat}/{itemInCat}
                       </span>
                     </button>
