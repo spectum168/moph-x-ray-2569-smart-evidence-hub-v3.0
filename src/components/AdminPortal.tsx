@@ -17,6 +17,7 @@ interface HospitalItem {
   originalCode?: string;
   name: string;
   password: string;
+  upline?: string;
   createdAt?: string;
 }
 
@@ -45,7 +46,7 @@ export default function AdminPortal({ onLogoutAdmin, onInspectHospital, onHospit
   
   // Edit State
   const [editingCode, setEditingCode] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<HospitalItem>({ code: "", name: "", password: "" });
+  const [editForm, setEditForm] = useState<HospitalItem>({ code: "", name: "", password: "", upline: "" });
 
   // Add Direct State
   const [showAddForm, setShowAddForm] = useState(false);
@@ -178,7 +179,8 @@ export default function AdminPortal({ onLogoutAdmin, onInspectHospital, onHospit
           oldCode: editingCode,
           newCode: editForm.code,
           name: editForm.name,
-          hospitalPassword: editForm.password
+          hospitalPassword: editForm.password,
+          upline: editForm.upline || "auditor"
         })
       });
       
@@ -972,9 +974,24 @@ export default function AdminPortal({ onLogoutAdmin, onInspectHospital, onHospit
 
                             {/* Upline Auditor tag */}
                             <td className="p-4 font-mono font-bold text-teal-700">
-                              <span className="bg-teal-50 px-2 py-0.5 rounded border border-teal-200 text-xs">
-                                @{hasUpline}
-                              </span>
+                              {isEditing ? (
+                                <select
+                                  value={editForm.upline || "auditor"}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, upline: e.target.value }))}
+                                  className="bg-white border border-gray-300 p-1 rounded font-sans text-xs text-stone-800 w-full focus:ring-1 focus:ring-[#5A5A40]"
+                                >
+                                  <option value="auditor">auditor (ผู้ประเมินหลัก)</option>
+                                  {auditors.map(aud => (
+                                    <option key={aud.username} value={aud.username}>
+                                      {aud.username} ({aud.name || "ไม่มีชื่อ"})
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="bg-teal-50 px-2 py-0.5 rounded border border-teal-200 text-xs">
+                                  @{hasUpline}
+                                </span>
+                              )}
                             </td>
 
                             {/* Created Date */}

@@ -366,7 +366,7 @@ export default function HospitalAuthScreen({ onAuthSuccess, onAdminSuccess, onAu
                     type="text"
                     id="moph-username"
                     name="username"
-                    autocomplete="username"
+                    autoComplete="username"
                     required
                     value={code}
                     onChange={(e) => setCode(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
@@ -383,7 +383,7 @@ export default function HospitalAuthScreen({ onAuthSuccess, onAdminSuccess, onAu
                     type="text"
                     id="moph-username"
                     name="username"
-                    autocomplete="username"
+                    autoComplete="username"
                     required
                     value={code}
                     onChange={(e) => setCode(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
@@ -398,7 +398,7 @@ export default function HospitalAuthScreen({ onAuthSuccess, onAdminSuccess, onAu
                     type="text"
                     id="moph-username"
                     name="username"
-                    autocomplete="username"
+                    autoComplete="username"
                     required
                     value={code}
                     onChange={(e) => setCode(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
@@ -467,7 +467,7 @@ export default function HospitalAuthScreen({ onAuthSuccess, onAdminSuccess, onAu
                 type="password"
                 id="moph-password"
                 name="password"
-                autocomplete={activeTab === "register" ? "new-password" : "current-password"}
+                autoComplete={activeTab === "register" ? "new-password" : "current-password"}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
