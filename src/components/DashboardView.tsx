@@ -386,7 +386,7 @@ export default function DashboardView({
               AI Executive Summary
             </span>
             <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-              สรุปคำชี้แนะระดับบริหาร 2569
+              สรุปคำชี้แนะระดับบริหาร 2568
             </h3>
             <p className="text-xs text-gray-300 leading-relaxed font-sans">
               จากการวิเคราะห์ฐานข้อมูลแบบองค์รวม: สถานะปัจจุบันพบลำดับเร่งด่วนใน{" "}

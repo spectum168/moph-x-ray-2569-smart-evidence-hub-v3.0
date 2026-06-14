@@ -52,3 +52,102 @@
   border-radius: 10px;
 }
 
+/* ==========================================
+   PURE VECTOR ACCREDITATION A4 PRINT ENGINE
+   ========================================== */
+@media print {
+  /* Reset html and body constraints to let standard browser document flow handle layout splitting naturally */
+  html, body {
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #1c1917 !important;
+    font-family: "Sarabun", "Inter", sans-serif !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Completely hide all interactive site shell wrappers */
+  header,
+  section,
+  nav,
+  aside,
+  footer,
+  .print\:hidden,
+  .toast-alert,
+  #custom-confirm-modal {
+    display: none !important;
+    height: 0 !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+
+  /* Strip outer background and overflow constraints off main wrappers */
+  #root,
+  .min-h-screen,
+  main {
+    background: transparent !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    max-width: 100% !important;
+    position: static !important;
+    box-shadow: none !important;
+  }
+
+  /* Make sure the target printable container is styled correctly */
+  #printable-evaluation-report {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+    position: static !important;
+  }
+
+  /* Force table layouts to fit perfectly on A4 widths and print borders cleanly */
+  table {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+  }
+
+  /* Prevent broken table rows or orphan headers across pages */
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important; /* Repeats table header naturally on new pages */
+  }
+
+  .page-break-inside-avoid {
+    page-break-inside: avoid !important;
+  }
+
+  /* Custom portrait A4 dimensions */
+  @page {
+    size: A4 portrait;
+    margin: 1.5cm 1.5cm 1.5cm 1.5cm;
+  }
+
+  /* Make sure link files represent the icon name but not full URLs */
+  a[href]:after {
+    content: "" !important;
+  }
+}
+

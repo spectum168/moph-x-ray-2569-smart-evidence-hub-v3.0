@@ -223,12 +223,12 @@ async function dbGetSheetNames(hospitalCode: string): Promise<string[]> {
         return data.sheets;
       }
     }
-    const defaultSheets = ["ปี 2569"];
+    const defaultSheets = ["ปี 2568"];
     await setDoc(metaDoc, { sheets: defaultSheets });
     return defaultSheets;
   } catch (e) {
     handleFirestoreError(e, OperationType.GET, path);
-    return ["ปี 2569"];
+    return ["ปี 2568"];
   }
 }
 
@@ -246,7 +246,7 @@ async function dbGetAssessments(hospitalCode: string, sheetName: string): Promis
     if (items.length === 0) {
       let baseTemplate = initialAssessmentsSanitized;
       // Pre-seed default points for Maetha standard Demo as in prior builds
-      if (cleanCode === "maetha" && sheetName === "ปี 2569") {
+      if (cleanCode === "maetha" && sheetName === "ปี 2568") {
         baseTemplate = initialAssessmentsSanitized.map(item => {
           if (item.Item_ID === "1.1.1") {
             return {
@@ -346,7 +346,7 @@ async function dbCreateSheet(hospitalCode: string, newSheetName: string): Promis
     }
 
     // Copy template items
-    const firstSheetName = existingSheets[0] || "ปี 2569";
+    const firstSheetName = existingSheets[0] || "ปี 2568";
     const baseItems = await dbGetAssessments(cleanCode, firstSheetName);
 
     const clonedItems: AssessmentItem[] = baseItems.map(item => ({
@@ -486,8 +486,8 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
 
       // Pre-seed sheets and metadata in Firestore
       const metaDocRef = doc(db, "hospitals", cleanCode, "sheet_meta", "list");
-      await setDoc(metaDocRef, { sheets: ["ปี 2569"] });
-      await dbGetAssessments(cleanCode, "ปี 2569");
+      await setDoc(metaDocRef, { sheets: ["ปี 2568"] });
+      await dbGetAssessments(cleanCode, "ปี 2568");
 
       return jsonResponse({ success: true, hospital: { code: cleanCode, name: newHospital.name, upline: newHospital.upline } });
     }
@@ -1073,7 +1073,7 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
 
     // 22. HOSPITAL GET ASSESSMENTS FOR SELECTED SHEET (GET)
     if (pathname === "/api/assessments" && method === "GET") {
-      const sheetName = urlObj.searchParams.get("sheet") || "ปี 2569";
+      const sheetName = urlObj.searchParams.get("sheet") || "ปี 2568";
       const data = await dbGetAssessments(hospitalCodeFromHeader, sheetName);
       return jsonResponse(data);
     }
@@ -1081,7 +1081,7 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
     // 23. HOSPITAL UPDATE INDIVIDUAL ASSESSMENT ITEM (POST)
     if (pathname === "/api/assessments/update" && method === "POST") {
       const { Item_ID, Status, Responsible_Person, Evidence_Link, Auditor_Comment, activeSheetName } = body;
-      const sheetName = activeSheetName || "ปี 2569";
+      const sheetName = activeSheetName || "ปี 2568";
       if (!Item_ID) {
         return errorResponse("Missing Item_ID parameter.");
       }
@@ -1108,7 +1108,7 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
     // 24. HOSPITAL RESET SHEET TO DEFAULT STANDARDS (POST)
     if (pathname === "/api/assessments/reset" && method === "POST") {
       const { activeSheetName } = body;
-      const sheetName = activeSheetName || "ปี 2569";
+      const sheetName = activeSheetName || "ปี 2568";
       await dbBatchOverWriteAssessments(hospitalCodeFromHeader, sheetName, initialAssessmentsSanitized);
       return jsonResponse({ success: true, message: `Database reset to default standard successfully.` });
     }
@@ -1116,7 +1116,7 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
     // 25. HOSPITAL IMPORT BATCH ITEMS (POST)
     if (pathname === "/api/assessments/import" && method === "POST") {
       const { items, activeSheetName } = body;
-      const sheetName = activeSheetName || "ปี 2569";
+      const sheetName = activeSheetName || "ปี 2568";
       if (!Array.isArray(items)) {
         return errorResponse("รูปแบบข้อมูลผิดพลาด ( items ต้องเป็นอาเรย์ )");
       }
@@ -1150,7 +1150,7 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
     // 25.5 OVERWRITE ALL ASSESSMENTS FOR BULK MODIFICATIONS (POST)
     if (pathname === "/api/assessments/set-all" && method === "POST") {
       const { items, activeSheetName } = body;
-      const sheetName = activeSheetName || "ปี 2569";
+      const sheetName = activeSheetName || "ปี 2568";
       if (!Array.isArray(items)) {
         return errorResponse("รูปแบบข้อมูลที่ส่งมาไม่ถูกต้อง (ต้องเป็นอาเรย์)");
       }

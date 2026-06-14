@@ -220,7 +220,7 @@ export default function HospitalAuthScreen({ onAuthSuccess, onAdminSuccess, onAu
               ? "Systems Administration Mode" 
               : activeTab === "auditor"
                 ? "MOPH Regional Auditor Mode"
-                : "MOPH X-Ray Accreditation 2569"}
+                : "MOPH X-Ray Accreditation 2568"}
           </span>
           <h2 className="text-lg font-bold tracking-tight">
             {activeTab === "admin" 
@@ -561,7 +561,7 @@ export default function HospitalAuthScreen({ onAuthSuccess, onAdminSuccess, onAu
         <div className="bg-[#f5f5f0] p-4 text-center border-t border-gray-150 text-[10px] text-gray-500 leading-relaxed font-sans flex flex-col gap-2 items-center justify-center">
           <div>
             <strong>💡 คำแนะนำสําหรับวิชาชีพ:</strong> ระบบแยกโค้ดนี้เหมาะกับโรงพยาบาลตรวจประเมินเดี่ยว 
-            หรือใช้ควบคุมข้อมูลความมั่นคงปลอดภัยตามมาตรฐาน และเกณฑ์ประเมินปี 2569
+            หรือใช้ควบคุมข้อมูลความมั่นคงปลอดภัยตามมาตรฐาน และเกณฑ์ประเมินปี 2568
           </div>
           {activeTab !== "admin" && (
             <button

@@ -37,7 +37,8 @@ import DashboardView from "./components/DashboardView";
 import HospitalAuthScreen from "./components/HospitalAuthScreen";
 import AdminPortal from "./components/AdminPortal";
 import AuditorPortal from "./components/AuditorPortal";
-import { LogOut } from "lucide-react";
+import { ReportView } from "./components/ReportView";
+import { LogOut, FileText } from "lucide-react";
 import { clientFetch as fetch } from "./clientStorage";
 
 const sanitizeCategory = (cat: string): string => {
@@ -51,7 +52,7 @@ const sanitizeCategory = (cat: string): string => {
 
 export default function App() {
   const [assessments, setAssessments] = useState<AssessmentItem[]>([]);
-  const [activeTab, setActiveTab] = useState<"workspace" | "dashboard">("dashboard");
+  const [activeTab, setActiveTab] = useState<"workspace" | "dashboard" | "report">("dashboard");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("ทั้งหมด");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -108,10 +109,10 @@ export default function App() {
   const [aiActionItems, setAiActionItems] = useState<string[]>([]);
 
   // Multi-Sheet States
-  const [sheets, setSheets] = useState<string[]>(["ปี 2569"]);
-  const [activeSheetName, setActiveSheetName] = useState<string>("ปี 2569");
+  const [sheets, setSheets] = useState<string[]>(["ปี 2568"]);
+  const [activeSheetName, setActiveSheetName] = useState<string>("ปี 2568");
   const [showCreateSheetModal, setShowCreateSheetModal] = useState<boolean>(false);
-  const [newSheetNameInput, setNewSheetNameInput] = useState<string>("ปี 2570");
+  const [newSheetNameInput, setNewSheetNameInput] = useState<string>("ปี 2569");
 
   // Category and sub-items management states
   const [showAddCategoryModal, setShowAddCategoryModal] = useState<boolean>(false);
@@ -1238,7 +1239,7 @@ export default function App() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-[10px] tracking-wider text-[#FFD700] bg-[#4a4a35] border border-[#6b6b4d] px-2 py-0.5 rounded uppercase font-semibold">
-                    MOPH X-Ray Accreditation 2569
+                    MOPH X-Ray Accreditation 2568
                   </span>
                   <span className="font-mono text-[10px] tracking-wider text-teal-300 bg-[#4a4a35] border border-[#6b6b4d] px-2 py-0.5 rounded font-semibold flex items-center gap-1">
                     <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping"></span>
@@ -1252,7 +1253,7 @@ export default function App() {
                   )}
                 </div>
                 <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-1.5 mt-0.5">
-                  MOPH X-ray 2569 Smart Evidence Hub
+                  MOPH X-ray 2568 Smart Evidence Hub
                   <span className="text-[#FFD700] text-sm font-semibold">v3.0</span>
                 </h1>
               </div>
@@ -1469,6 +1470,17 @@ export default function App() {
             <Layers className={`w-4 h-4 ${activeTab === "workspace" ? "text-[#FFD700]" : "text-[#5A5A40]"}`} />
             <span>📑 จัดการแฟ้มข้อมูลหลักฐาน (Evidence Base Workspace)</span>
           </button>
+          <button
+            onClick={() => setActiveTab("report")}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === "report"
+                ? "bg-[#5A5A40] text-white shadow-sm"
+                : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+            }`}
+          >
+            <FileText className={`w-4 h-4 ${activeTab === "report" ? "text-[#FFD700]" : "text-[#5A5A40]"}`} />
+            <span>📋 เอกสารรายงานการตรวจประเมิน (Assessment Report PDF)</span>
+          </button>
         </div>
         
         {/* 📑 Sheets Synchronization & CSV Importer Panel (Toggleable Drawer) */}
@@ -1589,6 +1601,11 @@ export default function App() {
             assessments={assessments}
             onSelectCategory={setSelectedCategoryFilter}
             onSwitchTab={setActiveTab}
+          />
+        ) : activeTab === "report" ? (
+          <ReportView
+            assessments={assessments}
+            hospital={hospital}
           />
         ) : (
           /* 🎛️ Dual Column Interactive Body */
@@ -2213,13 +2230,13 @@ export default function App() {
 
                 <div className="space-y-1.5 focus-within:text-[#5A5A40]">
                   <label className="block text-xs font-bold text-gray-700">
-                    ระบุชื่อแท็บประเมินชุดใหม่ (เช่น ปี 2569 หรือ แผนกทันตกรรม)
+                    ระบุชื่อแท็บประเมินชุดใหม่ (เช่น ปี 2568 หรือ แผนกทันตกรรม)
                   </label>
                   <input
                     type="text"
                     value={newSheetNameInput}
                     onChange={(e) => setNewSheetNameInput(e.target.value)}
-                    placeholder="ป้อนชื่อแท็บ เช่น ปี 2569, ปี 2570"
+                    placeholder="ป้อนชื่อแท็บ เช่น ปี 2568, ปี 2569"
                     className="w-full px-3.5 py-2 mx-auto block bg-gray-50 text-gray-800 border border-gray-300 rounded-lg text-xs font-bold font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#5A5A40] focus:border-transparent transition-all"
                     autoFocus
                     onKeyDown={(e) => {
