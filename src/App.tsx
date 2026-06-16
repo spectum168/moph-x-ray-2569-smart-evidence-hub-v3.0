@@ -32,7 +32,7 @@ import {
   X
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { AssessmentItem, AssessmentStatus } from "./types";
+import { AssessmentItem, AssessmentStatus, normalizeStatus } from "./types";
 import DashboardView from "./components/DashboardView";
 import HospitalAuthScreen from "./components/HospitalAuthScreen";
 import AdminPortal from "./components/AdminPortal";
@@ -97,7 +97,7 @@ export default function App() {
   const [csvErrorMessage, setCsvErrorMessage] = useState<string>("");
 
   // Target Item Form state
-  const [editedStatus, setEditedStatus] = useState<AssessmentStatus>("🔴 ยังไม่พร้อม");
+  const [editedStatus, setEditedStatus] = useState<AssessmentStatus>("🔴 ไม่มี");
   const [editedResponsible, setEditedResponsible] = useState<string>("");
   const [editedLinks, setEditedLinks] = useState<string[]>([]);
   const [editedComment, setEditedComment] = useState<string>("");
@@ -109,10 +109,10 @@ export default function App() {
   const [aiActionItems, setAiActionItems] = useState<string[]>([]);
 
   // Multi-Sheet States
-  const [sheets, setSheets] = useState<string[]>(["ปี 2568"]);
-  const [activeSheetName, setActiveSheetName] = useState<string>("ปี 2568");
+  const [sheets, setSheets] = useState<string[]>(["ปี 2569"]);
+  const [activeSheetName, setActiveSheetName] = useState<string>("ปี 2569");
   const [showCreateSheetModal, setShowCreateSheetModal] = useState<boolean>(false);
-  const [newSheetNameInput, setNewSheetNameInput] = useState<string>("ปี 2569");
+  const [newSheetNameInput, setNewSheetNameInput] = useState<string>("ปี 2570");
 
   // Category and sub-items management states
   const [showAddCategoryModal, setShowAddCategoryModal] = useState<boolean>(false);
@@ -559,7 +559,7 @@ export default function App() {
       Item_ID: `custom-${Date.now()}`,
       Criteria_Detail: "เกณฑ์ประเมินเริ่มต้น (สามารถกดเพื่อแก้ไขระบุข้อกำหนดจริงได้)",
       Success_Indicator: "ระบุเป้าหมายความสำเร็จของเกณฑ์ข้อนี้",
-      Status: "🔴 ยังไม่พร้อม",
+      Status: "🔴 ไม่มี",
       Responsible_Person: "",
       Evidence_Link: [],
       Auditor_Comment: "",
@@ -682,7 +682,7 @@ export default function App() {
       Item_ID: trimmedId,
       Criteria_Detail: trimmedCriteria,
       Success_Indicator: success.trim(),
-      Status: "🔴 ยังไม่พร้อม",
+      Status: "🔴 ไม่มี",
       Responsible_Person: "",
       Evidence_Link: [],
       Auditor_Comment: "",
@@ -986,13 +986,8 @@ export default function App() {
         }
 
         // Sanitize status to lock peh-peh
-        let status: AssessmentStatus = "🔴 ยังไม่พร้อม";
         const rawStatus = rowData[mapping["Status"]]?.trim() || "";
-        if (rawStatus.includes("พร้อมรับตรวจ") || rawStatus.includes("พร้อม")) {
-          status = "🟢 พร้อมรับตรวจ";
-        } else if (rawStatus.includes("ปรับปรุง") || rawStatus.includes("อยู่ระหว่าง")) {
-          status = "🟡 อยู่ระหว่างปรับปรุง";
-        }
+        const status: AssessmentStatus = normalizeStatus(rawStatus);
 
         importedItems.push({
           Main_Category: rowData[mapping["Main_Category"]]?.trim() || "อื่นๆ",
@@ -1068,15 +1063,17 @@ export default function App() {
 
   // Calculate high-performance overall statistics & Completion percentages
   const totalItems = assessments.length;
-  const readyItems = assessments.filter((i) => i.Status === "🟢 พร้อมรับตรวจ").length;
-  const inProgressItems = assessments.filter((i) => i.Status === "🟡 อยู่ระหว่างปรับปรุง").length;
-  const notReadyItems = assessments.filter((i) => i.Status === "🔴 ยังไม่พร้อม").length;
+  const readyItems = assessments.filter((i) => i.Status === "🟢 มีครบ" || i.Status === "🟢 พร้อมรับตรวจ").length;
+  const inProgressItems = assessments.filter((i) => i.Status === "🟡 มีบางส่วน" || i.Status === "🟡 อยู่ระหว่างปรับปรุง").length;
+  const notReadyItems = assessments.filter((i) => i.Status === "🔴 ไม่มี" || i.Status === "🔴 ยังไม่พร้อม").length;
+  const naItems = assessments.filter((i) => i.Status === "⚪ N/A ไม่เกี่ยวข้อง").length;
   const totalEvidenceLinks = assessments.reduce(
     (sum, item) => sum + (item.Evidence_Link ? item.Evidence_Link.length : 0),
     0
   );
   
-  const completionPercentage = totalItems > 0 ? Math.round((readyItems / totalItems) * 100) : 0;
+  const applicableItems = totalItems - naItems;
+  const completionPercentage = applicableItems > 0 ? Math.round((readyItems / applicableItems) * 100) : 0;
 
   const safeFormatSimpleDate = (isoString?: string) => {
     if (!isoString) return "ไม่เคยระบุ";
@@ -1239,7 +1236,7 @@ export default function App() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-[10px] tracking-wider text-[#FFD700] bg-[#4a4a35] border border-[#6b6b4d] px-2 py-0.5 rounded uppercase font-semibold">
-                    MOPH X-Ray Accreditation 2568
+                    MOPH X-Ray Accreditation 2569
                   </span>
                   <span className="font-mono text-[10px] tracking-wider text-teal-300 bg-[#4a4a35] border border-[#6b6b4d] px-2 py-0.5 rounded font-semibold flex items-center gap-1">
                     <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping"></span>
@@ -1253,7 +1250,7 @@ export default function App() {
                   )}
                 </div>
                 <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-1.5 mt-0.5">
-                  MOPH X-ray 2568 Smart Evidence Hub
+                  MOPH X-ray 2569 Smart Evidence Hub
                   <span className="text-[#FFD700] text-sm font-semibold">v3.0</span>
                 </h1>
               </div>
@@ -1373,7 +1370,7 @@ export default function App() {
 
       {/* 📊 Top Smart Infographics Dashboard Strip */}
       <section className="bg-white/90 backdrop-blur px-4 py-5 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           
           {/* Progress Card */}
           <div className="bg-[#f5f5f0]/60 border border-gray-200 text-gray-800 p-4 rounded-xl flex items-center space-x-4 shadow-sm">
@@ -1398,7 +1395,7 @@ export default function App() {
           {/* Core metrics */}
           <div className="bg-white border border-gray-200 p-4 rounded-xl flex items-center justify-between shadow-sm">
             <div>
-              <p className="text-gray-500 text-[11px] uppercase tracking-wider font-semibold">🟢 พร้อมรับตรวจ</p>
+              <p className="text-gray-500 text-[11px] uppercase tracking-wider font-semibold">🟢 มีครบ</p>
               <h3 className="text-2xl font-bold font-mono text-emerald-700 mt-1">{readyItems} <span className="text-xs font-sans text-gray-500">ข้อ</span></h3>
               <p className="text-[10px] text-gray-400 mt-0.5">เป้าหมายมาตรฐาน 100%</p>
             </div>
@@ -1409,7 +1406,7 @@ export default function App() {
 
           <div className="bg-white border border-gray-200 p-4 rounded-xl flex items-center justify-between shadow-sm">
             <div>
-              <p className="text-gray-500 text-[11px] uppercase tracking-wider font-semibold">🟡 อยู่ระหว่างปรับปรุง</p>
+              <p className="text-gray-500 text-[11px] uppercase tracking-wider font-semibold">🟡 มีบางส่วน</p>
               <h3 className="text-2xl font-bold font-mono text-amber-700 mt-1">{inProgressItems} <span className="text-xs font-sans text-gray-500">ข้อ</span></h3>
               <p className="text-[10px] text-gray-400 mt-0.5">ความเสี่ยงปานกลาง</p>
             </div>
@@ -1420,12 +1417,23 @@ export default function App() {
 
           <div className="bg-white border border-gray-200 p-4 rounded-xl flex items-center justify-between shadow-sm">
             <div>
-              <p className="text-gray-500 text-[11px] uppercase tracking-wider font-semibold">🔴 ยังไม่พร้อม</p>
+              <p className="text-gray-500 text-[11px] uppercase tracking-wider font-semibold">🔴 ไม่มี</p>
               <h3 className="text-2xl font-bold font-mono text-red-700 mt-1">{notReadyItems} <span className="text-xs font-sans text-gray-500">ข้อ</span></h3>
               <p className="text-[10px] text-gray-400 mt-0.5">ต้องจัดทำแผนด่วนพิเศษ</p>
             </div>
             <div className="p-2.5 bg-red-50 text-red-750 text-red-700 rounded-lg">
               <AlertCircle className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 p-4 rounded-xl flex items-center justify-between shadow-sm">
+            <div>
+              <p className="text-gray-500 text-[11px] uppercase tracking-wider font-semibold">⚪ N/A ไม่เกี่ยวข้อง</p>
+              <h3 className="text-2xl font-bold font-mono text-slate-600 mt-1">{naItems} <span className="text-xs font-sans text-gray-500">ข้อ</span></h3>
+              <p className="text-[10px] text-gray-400 mt-0.5">ยกเว้นตามเกณฑ์บริบท</p>
+            </div>
+            <div className="p-2.5 bg-slate-100 text-slate-600 rounded-lg">
+              <HelpCircle className="w-5 h-5" />
             </div>
           </div>
 
@@ -1534,7 +1542,7 @@ export default function App() {
                     value={pastedCSV}
                     onChange={(e) => setPastedCSV(e.target.value)}
                     placeholder={`Main_Category,Sub_Category,Item_ID,Criteria_Detail,Success_Indicator,Status,Responsible_Person,Evidence_Link,Auditor_Comment,Last_Update
-"1. ข้อกำหนดทั่วไป","1.1 โครงสร้าง","1.1.1","เอกสารประเมิน","มีแผนภูมิ","🟢 พร้อมรับตรวจ","ยรรยง","[\"https://drive.google.com/...\"]","คอมเมนต์",""
+"1. ข้อกำหนดทั่วไป","1.1 โครงสร้าง","1.1.1","เอกสารประเมิน","มีแผนภูมิ","🟢 มีครบ","ยรรยง","[\"https://drive.google.com/...\"]","คอมเมนต์",""
 ...`}
                     rows={6}
                     className="w-full bg-gray-50 border border-gray-300 text-gray-850 p-3 rounded-lg font-mono text-xs focus:bg-white focus:ring-1 focus:ring-teal-500 focus:outline-none"
@@ -1690,9 +1698,10 @@ export default function App() {
                     className="w-full bg-gray-50 border border-gray-300 text-gray-705 py-2 px-3 rounded-lg text-xs focus:bg-white focus:ring-1 focus:ring-teal-500 focus:outline-none"
                   >
                     <option value="ทั้งหมด">📊 ทุกสถานะความพร้อม</option>
-                    <option value="🟢 พร้อมรับตรวจ">🟢 พร้อมรับตรวจ</option>
-                    <option value="🟡 อยู่ระหว่างปรับปรุง">🟡 อยู่ระหว่างปรับปรุง</option>
-                    <option value="🔴 ยังไม่พร้อม">🔴 ยังไม่พร้อม</option>
+                    <option value="🟢 มีครบ">🟢 มีครบ</option>
+                    <option value="🟡 มีบางส่วน">🟡 มีบางส่วน</option>
+                    <option value="🔴 ไม่มี">🔴 ไม่มี</option>
+                    <option value="⚪ N/A ไม่เกี่ยวข้อง">⚪ N/A ไม่เกี่ยวข้อง</option>
                   </select>
                 </div>
 
@@ -1730,10 +1739,13 @@ export default function App() {
                     (i) => cat === "ทั้งหมด" || i.Main_Category === cat
                   ).length;
                   const readyInCat = assessments.filter(
-                    (i) => (cat === "ทั้งหมด" || i.Main_Category === cat) && i.Status === "🟢 พร้อมรับตรวจ"
+                    (i) => (cat === "ทั้งหมด" || i.Main_Category === cat) && (i.Status === "🟢 มีครบ" || i.Status === "🟢 พร้อมรับตรวจ")
                   ).length;
                   const inProgressInCat = assessments.filter(
-                    (i) => (cat === "ทั้งหมด" || i.Main_Category === cat) && i.Status === "🟡 อยู่ระหว่างปรับปรุง"
+                    (i) => (cat === "ทั้งหมด" || i.Main_Category === cat) && (i.Status === "🟡 มีบางส่วน" || i.Status === "🟡 อยู่ระหว่างปรับปรุง")
+                  ).length;
+                  const naInCat = assessments.filter(
+                    (i) => (cat === "ทั้งหมด" || i.Main_Category === cat) && i.Status === "⚪ N/A ไม่เกี่ยวข้อง"
                   ).length;
                   const displayLabel = cat === "ทั้งหมด" ? "💡 ดูทุกหมวด" : getCleanCategoryNumRef(cat);
 
@@ -1748,8 +1760,8 @@ export default function App() {
                     pillStyle = isSelected
                       ? "bg-[#5A5A40]/25 text-[#5A5A40] font-bold"
                       : "bg-gray-250 text-gray-600";
-                  } else if (itemInCat > 0 && readyInCat === itemInCat) {
-                    // สีเขียว: ตอบครบแล้ว (ทุกข้อเป็น 🟢 พร้อมรับตรวจ)
+                  } else if (itemInCat > 0 && readyInCat + naInCat === itemInCat) {
+                    // สีเขียว: ตอบครบแล้ว (ทุกข้อเป็น 🟢 มีครบ หรือ ⚪ N/A)
                     buttonStyle = isSelected
                       ? "bg-emerald-50 text-emerald-800 border-emerald-400 font-bold ring-1 ring-emerald-400/30 shadow-xs"
                       : "bg-emerald-50/40 text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-850 hover:border-emerald-300";
@@ -1811,10 +1823,14 @@ export default function App() {
                   const countLinks = item.Evidence_Link ? item.Evidence_Link.length : 0;
                   
                   // Card color outline based on status
-                  const statusColors = {
+                  const statusColors: Record<string, string> = {
+                    "🟢 มีครบ": "border-l-emerald-500",
                     "🟢 พร้อมรับตรวจ": "border-l-emerald-500",
+                    "🟡 มีบางส่วน": "border-l-amber-500",
                     "🟡 อยู่ระหว่างปรับปรุง": "border-l-amber-500",
-                    "🔴 ยังไม่พร้อม": "border-l-rose-500"
+                    "🔴 ไม่มี": "border-l-rose-500",
+                    "🔴 ยังไม่พร้อม": "border-l-rose-500",
+                    "⚪ N/A ไม่เกี่ยวข้อง": "border-l-slate-400"
                   };
 
                   return (
@@ -1851,10 +1867,12 @@ export default function App() {
                           )}
                           <span
                             className={`text-[10px] font-bold rounded-full px-2 py-0.5 border ${
-                              item.Status === "🟢 พร้อมรับตรวจ"
+                              item.Status === "🟢 มีครบ" || item.Status === "🟢 พร้อมรับตรวจ"
                                 ? "bg-emerald-50 text-emerald-700 border-emerald-150"
-                                : item.Status === "🟡 อยู่ระหว่างปรับปรุง"
+                                : item.Status === "🟡 มีบางส่วน" || item.Status === "🟡 อยู่ระหว่างปรับปรุง"
                                 ? "bg-amber-50 text-amber-700 border-amber-150"
+                                : item.Status === "⚪ N/A ไม่เกี่ยวข้อง"
+                                ? "bg-slate-50 text-slate-650 border-slate-200"
                                 : "bg-rose-50 text-rose-700 border-rose-150"
                             }`}
                           >
@@ -2047,11 +2065,12 @@ export default function App() {
                           <label className="block text-xs font-semibold text-gray-400 mb-1.5">
                             สถานะความพร้อมรับการตรวจ (ล็อกตามมาตรฐาน)
                           </label>
-                          <div className="grid grid-cols-3 gap-1.5">
+                          <div className="grid grid-cols-4 gap-1">
                             {[
-                              { val: "🟢 พร้อมรับตรวจ", c: "bg-emerald-50 border-emerald-250 text-emerald-700 hover:bg-emerald-100" },
-                              { val: "🟡 อยู่ระหว่างปรับปรุง", c: "bg-amber-50 border-amber-250 text-amber-700 hover:bg-amber-100" },
-                              { val: "🔴 ยังไม่พร้อม", c: "bg-rose-50 border-rose-205 text-rose-700 hover:bg-rose-100" }
+                              { val: "🟢 มีครบ", c: "bg-emerald-50 border-emerald-250 text-emerald-700 hover:bg-emerald-100" },
+                              { val: "🟡 มีบางส่วน", c: "bg-amber-50 border-amber-250 text-amber-700 hover:bg-amber-100" },
+                              { val: "🔴 ไม่มี", c: "bg-rose-50 border-rose-205 text-rose-700 hover:bg-rose-100" },
+                              { val: "⚪ N/A ไม่เกี่ยวข้อง", c: "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100" }
                             ].map((statOpt) => {
                               const active = editedStatus === statOpt.val;
                               return (
@@ -2059,12 +2078,14 @@ export default function App() {
                                   key={statOpt.val}
                                   type="button"
                                   onClick={() => setEditedStatus(statOpt.val as AssessmentStatus)}
-                                  className={`py-2 px-1 rounded-lg border text-center text-xs font-bold transition-all cursor-pointer ${
+                                  className={`py-2 px-0.5 rounded-lg border text-center text-[10px] font-bold transition-all cursor-pointer ${
                                     active
-                                      ? statOpt.val === "🟢 พร้อมรับตรวจ"
+                                      ? statOpt.val === "🟢 มีครบ"
                                         ? "bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-900/20"
-                                        : statOpt.val === "🟡 อยู่ระหว่างปรับปรุง"
+                                        : statOpt.val === "🟡 มีบางส่วน"
                                         ? "bg-amber-500 border-amber-400 text-slate-950 shadow-lg shadow-amber-900/20"
+                                        : statOpt.val === "⚪ N/A ไม่เกี่ยวข้อง"
+                                        ? "bg-slate-500 border-slate-500 text-white shadow-lg shadow-slate-900/10"
                                         : "bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-950/20"
                                       : statOpt.c
                                   }`}
@@ -2230,13 +2251,13 @@ export default function App() {
 
                 <div className="space-y-1.5 focus-within:text-[#5A5A40]">
                   <label className="block text-xs font-bold text-gray-700">
-                    ระบุชื่อแท็บประเมินชุดใหม่ (เช่น ปี 2568 หรือ แผนกทันตกรรม)
+                    ระบุชื่อแท็บประเมินชุดใหม่ (เช่น ปี 2569 หรือ แผนกทันตกรรม)
                   </label>
                   <input
                     type="text"
                     value={newSheetNameInput}
                     onChange={(e) => setNewSheetNameInput(e.target.value)}
-                    placeholder="ป้อนชื่อแท็บ เช่น ปี 2568, ปี 2569"
+                    placeholder="ป้อนชื่อแท็บ เช่น ปี 2569, ปี 2570"
                     className="w-full px-3.5 py-2 mx-auto block bg-gray-50 text-gray-800 border border-gray-300 rounded-lg text-xs font-bold font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#5A5A40] focus:border-transparent transition-all"
                     autoFocus
                     onKeyDown={(e) => {

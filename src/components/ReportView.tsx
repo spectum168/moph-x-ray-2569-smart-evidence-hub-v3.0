@@ -55,9 +55,9 @@ export function ReportView({ assessments, hospital }: ReportViewProps) {
     return localStorage.getItem("moph_rpt_auditor2Position") || "กรรมการตรวจประเมินวิชาชีพ";
   });
   
-  // Year-aware default date (2026/2568)
+  // Year-aware default date (2026/2569)
   const [evalDate, setEvalDate] = useState<string>(() => {
-    return localStorage.getItem("moph_rpt_evalDate") || "14 มิถุนายน 2568";
+    return localStorage.getItem("moph_rpt_evalDate") || "14 มิถุนายน 2569";
   });
   const [overallRemarks, setOverallRemarks] = useState<string>(() => {
     return localStorage.getItem("moph_rpt_overallRemarks") || "";
@@ -453,7 +453,7 @@ export function ReportView({ assessments, hospital }: ReportViewProps) {
               เอกสารรับรองรายงานผลการตรวจประเมินตนเอง
             </h1>
             <h2 className="text-sm font-bold text-stone-850 font-sans">
-              มาตรฐานระบบคุณภาพบริการทางรังสีวิทยาทางการแพทย์ ประจำปีงบประมาณ พ.ศ. 2568
+              มาตรฐานระบบคุณภาพบริการทางรังสีวิทยาทางการแพทย์ ประจำปีงบประมาณ พ.ศ. 2569
             </h2>
             <p className="text-xs text-stone-600 font-sans">
               ด้านรังสีวินิจฉัยและรังสีร่วมรักษา • สำนักเครื่องมือแพทย์ กรมวิทยาศาสตร์การแพทย์ กระทรวงสาธารณสุข
@@ -572,7 +572,7 @@ export function ReportView({ assessments, hospital }: ReportViewProps) {
               <thead>
                 <tr className="bg-stone-100 text-stone-850 border-b border-stone-350">
                   <th className="border border-stone-300 px-2 py-2 text-center w-12 font-bold shrink-0">รหัสข้อ</th>
-                  <th className="border border-stone-300 px-3 py-2 font-bold max-w-sm">รายละเอียดตัวเกณฑ์มาตรฐาน (2568)</th>
+                  <th className="border border-stone-300 px-3 py-2 font-bold max-w-sm">รายละเอียดตัวเกณฑ์มาตรฐาน (2569)</th>
                   <th className="border border-stone-300 px-2 py-2 text-center w-24 font-bold shrink-0">สถานะประเมิน</th>
                   <th className="border border-stone-300 px-2 py-2 w-32 font-bold">คอมเมนท์พิจารณา / ไฟล์แนบอ้างอิง</th>
                 </tr>
@@ -657,7 +657,7 @@ export function ReportView({ assessments, hospital }: ReportViewProps) {
               กองคณะอนุกรรมการตรวจรับรองคุณสมบัติทางกระทรวงสาธารณสุข ขอลงลายมือชื่อพยานความสมบูรณ์
             </p>
             <p>
-              ในการจัดทำคำขอประเมินด้วยมาตรฐานระบบงานรังสีการแพทย์ 2568 ฉบับสมบูรณ์ความพร้อมตามบัญชีแนบท้องเรื่อง ณ วันที่ตรวจรับรองข้างต้น
+              ในการจัดทำคำขอประเมินด้วยมาตรฐานระบบงานรังสีการแพทย์ 2569 ฉบับสมบูรณ์ความพร้อมตามบัญชีแนบท้องเรื่อง ณ วันที่ตรวจรับรองข้างต้น
             </p>
           </div>
 

@@ -31,13 +31,16 @@ export default function DashboardView({
 
   // Aggregate stats
   const totalItems = assessments.length;
-  const readyItems = assessments.filter((i) => i.Status === "🟢 พร้อมรับตรวจ").length;
-  const inProgressItems = assessments.filter((i) => i.Status === "🟡 อยู่ระหว่างปรับปรุง").length;
-  const notReadyItems = assessments.filter((i) => i.Status === "🔴 ยังไม่พร้อม").length;
+  const readyItems = assessments.filter((i) => i.Status === "🟢 มีครบ" || i.Status === "🟢 พร้อมรับตรวจ").length;
+  const inProgressItems = assessments.filter((i) => i.Status === "🟡 มีบางส่วน" || i.Status === "🟡 อยู่ระหว่างปรับปรุง").length;
+  const notReadyItems = assessments.filter((i) => i.Status === "🔴 ไม่มี" || i.Status === "🔴 ยังไม่พร้อม").length;
+  const naItems = assessments.filter((i) => i.Status === "⚪ N/A ไม่เกี่ยวข้อง").length;
   
-  const completionPercentage = totalItems > 0 ? Math.round((readyItems / totalItems) * 100) : 0;
-  const progressPercentage = totalItems > 0 ? Math.round((inProgressItems / totalItems) * 100) : 0;
-  const pendingPercentage = totalItems > 0 ? Math.round((notReadyItems / totalItems) * 100) : 0;
+  const applicableItems = totalItems - naItems;
+  const completionPercentage = applicableItems > 0 ? Math.round((readyItems / applicableItems) * 100) : 0;
+  const progressPercentage = applicableItems > 0 ? Math.round((inProgressItems / applicableItems) * 100) : 0;
+  const pendingPercentage = applicableItems > 0 ? Math.round((notReadyItems / applicableItems) * 100) : 0;
+  const naPercentage = totalItems > 0 ? Math.round((naItems / totalItems) * 100) : 0;
 
   // Group metrics by main category
   const categoriesList = [...new Set(assessments.map(item => item?.Main_Category || "ไม่ระบุหมวด"))].sort();
@@ -45,10 +48,12 @@ export default function DashboardView({
   const categoriesWithMetrics = categoriesList.map(catName => {
     const itemsInCat = assessments.filter(item => (item?.Main_Category || "ไม่ระบุหมวด") === catName);
     const total = itemsInCat.length;
-    const ready = itemsInCat.filter(item => item?.Status === "🟢 พร้อมรับตรวจ").length;
-    const inProgress = itemsInCat.filter(item => item?.Status === "🟡 อยู่ระหว่างปรับปรุง").length;
-    const notReady = itemsInCat.filter(item => item?.Status === "🔴 ยังไม่พร้อม").length;
-    const score = total > 0 ? Math.round((ready / total) * 100) : 0;
+    const ready = itemsInCat.filter(item => item?.Status === "🟢 มีครบ" || item?.Status === "🟢 พร้อมรับตรวจ").length;
+    const inProgress = itemsInCat.filter(item => item?.Status === "🟡 มีบางส่วน" || item?.Status === "🟡 อยู่ระหว่างปรับปรุง").length;
+    const notReady = itemsInCat.filter(item => item?.Status === "🔴 ไม่มี" || item?.Status === "🔴 ยังไม่พร้อม").length;
+    const na = itemsInCat.filter(item => item?.Status === "⚪ N/A ไม่เกี่ยวข้อง").length;
+    const applicable = total - na;
+    const score = applicable > 0 ? Math.round((ready / applicable) * 100) : 0;
     
     return {
       name: catName,
@@ -56,6 +61,7 @@ export default function DashboardView({
       ready,
       inProgress,
       notReady,
+      na,
       score
     };
   });
@@ -188,7 +194,7 @@ export default function DashboardView({
             <div className={`flex items-center justify-between p-1.5 rounded-lg transition-colors text-xs ${hoveredStatus === "ready" ? "bg-emerald-50" : ""}`}>
               <div className="flex items-center space-x-2">
                 <span className="w-3 h-3 bg-emerald-600 rounded-full inline-block"></span>
-                <span className="font-medium text-gray-700">🟢 พร้อมรับตรวจ</span>
+                <span className="font-medium text-gray-700">🟢 มีครบ</span>
               </div>
               <span className="font-mono font-bold text-gray-800">{readyItems} ข้อ ({completionPercentage}%)</span>
             </div>
@@ -196,7 +202,7 @@ export default function DashboardView({
             <div className={`flex items-center justify-between p-1.5 rounded-lg transition-colors text-xs ${hoveredStatus === "inprogress" ? "bg-amber-50" : ""}`}>
               <div className="flex items-center space-x-2">
                 <span className="w-3 h-3 bg-amber-500 rounded-full inline-block"></span>
-                <span className="font-medium text-gray-700">🟡 อยู่ระหว่างปรับปรุง</span>
+                <span className="font-medium text-gray-700">🟡 มีบางส่วน</span>
               </div>
               <span className="font-mono font-bold text-gray-800">{inProgressItems} ข้อ ({progressPercentage}%)</span>
             </div>
@@ -204,9 +210,17 @@ export default function DashboardView({
             <div className={`flex items-center justify-between p-1.5 rounded-lg transition-colors text-xs ${hoveredStatus === "notready" ? "bg-rose-50" : ""}`}>
               <div className="flex items-center space-x-2">
                 <span className="w-3 h-3 bg-rose-600 rounded-full inline-block"></span>
-                <span className="font-medium text-gray-700">🔴 ยังไม่พร้อม</span>
+                <span className="font-medium text-gray-700">🔴 ไม่มี</span>
               </div>
               <span className="font-mono font-bold text-gray-800">{notReadyItems} ข้อ ({pendingPercentage}%)</span>
+            </div>
+
+            <div className={`flex items-center justify-between p-1.5 rounded-lg transition-colors text-xs ${hoveredStatus === "na" ? "bg-slate-50" : ""}`}>
+              <div className="flex items-center space-x-2">
+                <span className="w-3 h-3 bg-slate-400 rounded-full inline-block"></span>
+                <span className="font-medium text-gray-700">⚪ N/A ไม่เกี่ยวข้อง</span>
+              </div>
+              <span className="font-mono font-bold text-gray-800">{naItems} ข้อ ({naPercentage}%)</span>
             </div>
           </div>
 
@@ -235,6 +249,7 @@ export default function DashboardView({
               const readyPct = cat.total > 0 ? (cat.ready / cat.total) * 100 : 0;
               const progressPct = cat.total > 0 ? (cat.inProgress / cat.total) * 100 : 0;
               const notReadyPct = cat.total > 0 ? (cat.notReady / cat.total) * 100 : 0;
+              const naPct = cat.total > 0 ? (cat.na / cat.total) * 100 : 0;
 
               return (
                 <div key={idx} className="group/item">
@@ -252,7 +267,7 @@ export default function DashboardView({
                     </button>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-mono font-semibold text-gray-500">
-                        {cat.ready}/{cat.total} พร้อมรับตรวจ
+                        {cat.ready}/{cat.total} มีครบ
                       </span>
                       <span className="font-bold font-mono text-[#5A5A40] bg-[#f5f5f0] px-1.5 py-0.2 rounded text-[10px] border border-gray-200">
                         {cat.score}%
@@ -260,9 +275,9 @@ export default function DashboardView({
                     </div>
                   </div>
 
-                  {/* Stacked triple status bar */}
+                  {/* Stacked quadruple status bar */}
                   <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden flex shadow-inner relative group cursor-pointer"
-                       title={`🟢 พร้อม: ${cat.ready} | 🟡 อยู่ระหว่าง: ${cat.inProgress} | 🔴 ยังไม่พร้อม: ${cat.notReady}`}
+                       title={`🟢 มีครบ: ${cat.ready} | 🟡 มีบางส่วน: ${cat.inProgress} | 🔴 ไม่มี: ${cat.notReady} | ⚪ N/A: ${cat.na}`}
                        onClick={() => handleCategoryClick(cat.name)}>
                     
                     {/* Green */}
@@ -289,9 +304,17 @@ export default function DashboardView({
                       />
                     )}
 
+                    {/* Grey */}
+                    {cat.na > 0 && (
+                      <div
+                        className="bg-slate-300 h-full transition-all duration-300 hover:brightness-110"
+                        style={{ width: `${naPct}%` }}
+                      />
+                    )}
+
                     {/* Overlay count on hover */}
                     <div className="absolute inset-0 opacity-0 hover:opacity-100 bg-[#5A5A40]/90 text-white text-[9px] font-bold flex items-center justify-center transition-opacity duration-200">
-                      พร้อม: {cat.ready} • ปรับปรุง: {cat.inProgress} • ยังไม่พร้อม: {cat.notReady} (คลิกดูรายการ)
+                      มีครบ: {cat.ready} • มีบางส่วน: {cat.inProgress} • ไม่มี: {cat.notReady} • N/A: {cat.na} (คลิกดูรายการ)
                     </div>
                   </div>
                 </div>
@@ -315,7 +338,7 @@ export default function DashboardView({
                 จุดเฝ้าระวังความเสี่ยงสูง (High Priority Action Plan)
               </h3>
               <p className="text-xs text-gray-500">
-                หมวดหมู่เกณฑ์ประเมินที่ยังมีรายการสถานะ "🔴 ยังไม่พร้อม" ค้างอยู่มากที่สุด จำเป็นต้องเร่งประสานผู้รับผิดชอบ
+                หมวดหมู่เกณฑ์ประเมินที่ยังมีรายการสถานะ "🔴 ไม่มี" ค้างอยู่มากที่สุด จำเป็นต้องเร่งประสานผู้รับผิดชอบ
               </p>
             </div>
             
@@ -348,7 +371,7 @@ export default function DashboardView({
                         เฝ้าระวังอันดับ {i + 1}
                       </span>
                       <span className="text-[10px] font-mono bg-white border border-gray-200 px-1.5 rounded text-gray-500 font-semibold">
-                        ยังไม่พร้อม {hotspot.notReady} ข้อ
+                        ไม่มี {hotspot.notReady} ข้อ
                       </span>
                     </div>
                     <h4 className="text-xs font-bold text-gray-800 line-clamp-2 min-h-[32px] font-sans">
@@ -386,7 +409,7 @@ export default function DashboardView({
               AI Executive Summary
             </span>
             <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-              สรุปคำชี้แนะระดับบริหาร 2568
+              สรุปคำชี้แนะระดับบริหาร 2569
             </h3>
             <p className="text-xs text-gray-300 leading-relaxed font-sans">
               จากการวิเคราะห์ฐานข้อมูลแบบองค์รวม: สถานะปัจจุบันพบลำดับเร่งด่วนใน{" "}
@@ -424,9 +447,10 @@ export default function DashboardView({
               <tr className="border-b border-gray-200 text-gray-500 uppercase font-semibold">
                 <th className="py-2.5 px-3">หมวดตามมาตรฐาน (Index 0)</th>
                 <th className="py-2.5 px-3 text-center">รหัสประเมินทั้งหมด</th>
-                <th className="py-2.5 px-3 text-emerald-700 text-center">🟢 พร้อมตรวจ</th>
-                <th className="py-2.5 px-3 text-amber-600 text-center">🟡 ปรับปรุง</th>
-                <th className="py-2.5 px-3 text-rose-600 text-center">🔴 ยังไม่พร้อม</th>
+                <th className="py-2.5 px-3 text-emerald-700 text-center">🟢 มีครบ</th>
+                <th className="py-2.5 px-3 text-amber-600 text-center">🟡 มีบางส่วน</th>
+                <th className="py-2.5 px-3 text-rose-600 text-center">🔴 ไม่มี</th>
+                <th className="py-2.5 px-3 text-slate-500 text-center">⚪ N/A</th>
                 <th className="py-2.5 px-3 text-right">ความก้าวหน้าหน่วยงาน</th>
               </tr>
             </thead>
@@ -455,6 +479,9 @@ export default function DashboardView({
                   </td>
                   <td className="py-3 px-3 text-center font-mono text-rose-600 bg-rose-50/20 font-bold">
                     {cat.notReady}
+                  </td>
+                  <td className="py-3 px-3 text-center font-mono text-slate-500 bg-slate-50/25 font-bold border-l border-r border-gray-100">
+                    {cat.na}
                   </td>
                   <td className="py-3 px-3 text-right">
                     <span className={`inline-block font-mono font-bold text-xs px-2 py-0.5 rounded ${

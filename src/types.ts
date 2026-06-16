@@ -3,7 +3,30 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type AssessmentStatus = "🟢 พร้อมรับตรวจ" | "🟡 อยู่ระหว่างปรับปรุง" | "🔴 ยังไม่พร้อม";
+export type AssessmentStatus = 
+  | "🟢 พร้อมรับตรวจ" 
+  | "🟡 อยู่ระหว่างปรับปรุง" 
+  | "🔴 ยังไม่พร้อม"
+  | "🟢 มีครบ"
+  | "🟡 มีบางส่วน"
+  | "🔴 ไม่มี"
+  | "⚪ N/A ไม่เกี่ยวข้อง";
+
+export function normalizeStatus(status: string): AssessmentStatus {
+  if (!status) return "🔴 ไม่มี";
+  const str = status.trim();
+  if (str === "🟢 มีครบ" || str === "🟢 พร้อมรับตรวจ") return "🟢 มีครบ";
+  if (str === "🟡 มีบางส่วน" || str === "🟡 อยู่ระหว่างปรับปรุง") return "🟡 มีบางส่วน";
+  if (str === "🔴 ไม่มี" || str === "🔴 ยังไม่พร้อม") return "🔴 ไม่มี";
+  if (str === "⚪ N/A ไม่เกี่ยวข้อง") return "⚪ N/A ไม่เกี่ยวข้อง";
+  
+  if (str.includes("มีครบ") || str.includes("พร้อม")) return "🟢 มีครบ";
+  if (str.includes("มีบางส่วน") || str.includes("ปรับปรุง")) return "🟡 มีบางส่วน";
+  if (str.includes("ไม่มี") || str.includes("ยังไม่พร้อม")) return "🔴 ไม่มี";
+  if (str.includes("N/A") || str.includes("ไม่เกี่ยวข้อง")) return "⚪ N/A ไม่เกี่ยวข้อง";
+  
+  return "🔴 ไม่มี";
+}
 
 export interface AssessmentItem {
   Main_Category: string;       // Column A (Index 0): หมวดหมู่หลัก (หมวด 1 - 9)

@@ -1,5 +1,5 @@
 import { initialAssessments } from "./seedData";
-import { AssessmentItem, AssessmentStatus } from "./types";
+import { AssessmentItem, AssessmentStatus, normalizeStatus } from "./types";
 import { initializeApp } from "firebase/app";
 import {
   getFirestore,
@@ -75,7 +75,7 @@ const sanitizeCategory = (cat: string): string => {
 const initialAssessmentsSanitized = initialAssessments.map(item => ({
   ...item,
   Main_Category: sanitizeCategory(item.Main_Category),
-  Status: "🔴 ยังไม่พร้อม" as AssessmentStatus,
+  Status: "🔴 ไม่มี" as AssessmentStatus,
   Evidence_Link: [] as string[],
   Last_Update: ""
 }));
@@ -220,15 +220,43 @@ async function dbGetSheetNames(hospitalCode: string): Promise<string[]> {
     if (snap.exists()) {
       const data = snap.data();
       if (Array.isArray(data?.sheets) && data.sheets.length > 0) {
-        return data.sheets;
+        let currentSheets: string[] = data.sheets;
+        
+        // Auto migrate "ปี 2568" -> "ปี 2569" to ensure no active hospital is left behind
+        if (currentSheets.includes("ปี 2568")) {
+          try {
+            // Read items of "ปี 2568" first
+            const items2568 = await dbGetAssessments(cleanCode, "ปี 2568");
+            if (items2568 && items2568.length > 0) {
+              // Write items to "ปี 2569" subcollection block
+              const chunks = chunkArray(items2568, 100);
+              for (const chunk of chunks) {
+                const batch = writeBatch(db);
+                chunk.forEach(it => {
+                  const safeId = it.Item_ID.replace(/\//g, "_");
+                  const itemRef = doc(db, "hospitals", cleanCode, "sheets", "ปี 2569", "items", safeId);
+                  batch.set(itemRef, it);
+                });
+                await batch.commit();
+              }
+            }
+            // Update the sheet meta document
+            currentSheets = currentSheets.map(s => s === "ปี 2568" ? "ปี 2569" : s);
+            currentSheets = Array.from(new Set(currentSheets)); // Deduplicate
+            await setDoc(metaDoc, { sheets: currentSheets }, { merge: true });
+          } catch (migrationErr) {
+            console.error("Migration from 2568 to 2569 failed:", migrationErr);
+          }
+        }
+        return currentSheets;
       }
     }
-    const defaultSheets = ["ปี 2568"];
+    const defaultSheets = ["ปี 2569"];
     await setDoc(metaDoc, { sheets: defaultSheets });
     return defaultSheets;
   } catch (e) {
     handleFirestoreError(e, OperationType.GET, path);
-    return ["ปี 2568"];
+    return ["ปี 2569"];
   }
 }
 
@@ -240,7 +268,9 @@ async function dbGetAssessments(hospitalCode: string, sheetName: string): Promis
     const snap = await getDocs(itemsRef);
     let items: AssessmentItem[] = [];
     snap.forEach(docSnap => {
-      items.push(docSnap.data() as AssessmentItem);
+      const raw = docSnap.data() as AssessmentItem;
+      raw.Status = normalizeStatus(raw.Status);
+      items.push(raw);
     });
 
     if (items.length === 0) {
@@ -251,7 +281,7 @@ async function dbGetAssessments(hospitalCode: string, sheetName: string): Promis
           if (item.Item_ID === "1.1.1") {
             return {
               ...item,
-              Status: "🟢 พร้อมรับตรวจ" as AssessmentStatus,
+              Status: "🟢 มีครบ" as AssessmentStatus,
               Evidence_Link: ["https://drive.google.com/file/d/12pMlANTZ4xml6adlffpMmIfOJH0X6eXq/view?usp=sharing"],
               Last_Update: "19/5/2026"
             };
@@ -259,7 +289,7 @@ async function dbGetAssessments(hospitalCode: string, sheetName: string): Promis
           if (item.Item_ID === "1.1.2") {
             return {
               ...item,
-              Status: "🟢 พร้อมรับตรวจ" as AssessmentStatus,
+              Status: "🟢 มีครบ" as AssessmentStatus,
               Evidence_Link: ["https://docs.google.com/document/d/1Af3vaNd0HA3NTeRKNnGliewEkDXA8fz5oKcKQZCKiR8/edit?usp=drive_link"],
               Last_Update: "19/5/2026"
             };
@@ -346,7 +376,7 @@ async function dbCreateSheet(hospitalCode: string, newSheetName: string): Promis
     }
 
     // Copy template items
-    const firstSheetName = existingSheets[0] || "ปี 2568";
+    const firstSheetName = existingSheets[0] || "ปี 2569";
     const baseItems = await dbGetAssessments(cleanCode, firstSheetName);
 
     const clonedItems: AssessmentItem[] = baseItems.map(item => ({
@@ -355,7 +385,7 @@ async function dbCreateSheet(hospitalCode: string, newSheetName: string): Promis
       Item_ID: item.Item_ID,
       Criteria_Detail: item.Criteria_Detail || "",
       Success_Indicator: item.Success_Indicator || "",
-      Status: "🔴 ยังไม่พร้อม",
+      Status: "🔴 ไม่มี",
       Responsible_Person: "",
       Evidence_Link: [],
       Auditor_Comment: "",
@@ -486,8 +516,8 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
 
       // Pre-seed sheets and metadata in Firestore
       const metaDocRef = doc(db, "hospitals", cleanCode, "sheet_meta", "list");
-      await setDoc(metaDocRef, { sheets: ["ปี 2568"] });
-      await dbGetAssessments(cleanCode, "ปี 2568");
+      await setDoc(metaDocRef, { sheets: ["ปี 2569"] });
+      await dbGetAssessments(cleanCode, "ปี 2569");
 
       return jsonResponse({ success: true, hospital: { code: cleanCode, name: newHospital.name, upline: newHospital.upline } });
     }
@@ -1073,7 +1103,7 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
 
     // 22. HOSPITAL GET ASSESSMENTS FOR SELECTED SHEET (GET)
     if (pathname === "/api/assessments" && method === "GET") {
-      const sheetName = urlObj.searchParams.get("sheet") || "ปี 2568";
+      const sheetName = urlObj.searchParams.get("sheet") || "ปี 2569";
       const data = await dbGetAssessments(hospitalCodeFromHeader, sheetName);
       return jsonResponse(data);
     }
@@ -1081,7 +1111,7 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
     // 23. HOSPITAL UPDATE INDIVIDUAL ASSESSMENT ITEM (POST)
     if (pathname === "/api/assessments/update" && method === "POST") {
       const { Item_ID, Status, Responsible_Person, Evidence_Link, Auditor_Comment, activeSheetName } = body;
-      const sheetName = activeSheetName || "ปี 2568";
+      const sheetName = activeSheetName || "ปี 2569";
       if (!Item_ID) {
         return errorResponse("Missing Item_ID parameter.");
       }
@@ -1108,7 +1138,7 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
     // 24. HOSPITAL RESET SHEET TO DEFAULT STANDARDS (POST)
     if (pathname === "/api/assessments/reset" && method === "POST") {
       const { activeSheetName } = body;
-      const sheetName = activeSheetName || "ปี 2568";
+      const sheetName = activeSheetName || "ปี 2569";
       await dbBatchOverWriteAssessments(hospitalCodeFromHeader, sheetName, initialAssessmentsSanitized);
       return jsonResponse({ success: true, message: `Database reset to default standard successfully.` });
     }
@@ -1116,7 +1146,7 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
     // 25. HOSPITAL IMPORT BATCH ITEMS (POST)
     if (pathname === "/api/assessments/import" && method === "POST") {
       const { items, activeSheetName } = body;
-      const sheetName = activeSheetName || "ปี 2568";
+      const sheetName = activeSheetName || "ปี 2569";
       if (!Array.isArray(items)) {
         return errorResponse("รูปแบบข้อมูลผิดพลาด ( items ต้องเป็นอาเรย์ )");
       }
@@ -1130,7 +1160,7 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
           Item_ID: imported.Item_ID,
           Criteria_Detail: imported.Criteria_Detail || "",
           Success_Indicator: imported.Success_Indicator || "",
-          Status: imported.Status || "🔴 ยังไม่พร้อม",
+          Status: imported.Status || "🔴 ไม่มี",
           Responsible_Person: imported.Responsible_Person || "",
           Evidence_Link: Array.isArray(imported.Evidence_Link) ? imported.Evidence_Link : [],
           Auditor_Comment: imported.Auditor_Comment || "",
@@ -1150,7 +1180,7 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
     // 25.5 OVERWRITE ALL ASSESSMENTS FOR BULK MODIFICATIONS (POST)
     if (pathname === "/api/assessments/set-all" && method === "POST") {
       const { items, activeSheetName } = body;
-      const sheetName = activeSheetName || "ปี 2568";
+      const sheetName = activeSheetName || "ปี 2569";
       if (!Array.isArray(items)) {
         return errorResponse("รูปแบบข้อมูลที่ส่งมาไม่ถูกต้อง (ต้องเป็นอาเรย์)");
       }
@@ -1161,7 +1191,7 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
         Item_ID: imported.Item_ID,
         Criteria_Detail: imported.Criteria_Detail || "",
         Success_Indicator: imported.Success_Indicator || "",
-        Status: imported.Status || "🔴 ยังไม่พร้อม",
+        Status: imported.Status || "🔴 ไม่มี",
         Responsible_Person: imported.Responsible_Person || "",
         Evidence_Link: Array.isArray(imported.Evidence_Link) ? imported.Evidence_Link : [],
         Auditor_Comment: imported.Auditor_Comment || "",
@@ -1179,7 +1209,7 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
         actionItems: [
           "อัปโหลดรายงานผลการตรวจสอบและบำรุงรักษาประจำปีใน Google Drive และแชร์สิทธิ์ทุกคนที่เป็นผู้ชม",
           "กรุณากรอกผู้ลงนามรับผิดชอบหรือเบอร์ติดต่อทางขวาของเกณฑ์มาตรฐานข้อนี้",
-          "แจ้งปรับสถานะเป็น '🟢 พร้อมรับตรวจ' เพื่อส่งสัญญาณไปยังผู้แนะนำระดับภาคของท่าน"
+          "แจ้งปรับสถานะเป็น '🟢 มีครบ' เพื่อส่งสัญญาณไปยังผู้แนะนำระดับภาคของท่าน"
         ]
       };
       return jsonResponse(resObj);
