@@ -97,7 +97,7 @@ export function ReportView({ assessments, hospital }: ReportViewProps) {
   }, [overallRemarks]);
 
   // Filtering which items are shown in printable table
-  const [filterStatus, setFilterStatus] = useState<"all" | "ready" | "warning" | "not_ready">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "ready" | "warning" | "not_ready" | "na">("all");
   const [selectedCategorySelect, setSelectedCategorySelect] = useState<string>("ทั้งหมด");
 
   // Get distinct categories
@@ -108,27 +108,36 @@ export function ReportView({ assessments, hospital }: ReportViewProps) {
 
   // Statistics calculation
   const totalCount = assessments.length;
-  const readyCount = assessments.filter(i => i.Status === "🟢 พร้อมรับตรวจ").length;
-  const warningCount = assessments.filter(i => i.Status === "🟡 อยู่ระหว่างปรับปรุง").length;
-  const notReadyCount = assessments.filter(i => i.Status === "🔴 ยังไม่พร้อม").length;
+  const readyCount = assessments.filter(i => i.Status === "🟢 มีครบ" || i.Status === "🟢 พร้อมรับตรวจ").length;
+  const warningCount = assessments.filter(i => i.Status === "🟡 มีบางส่วน" || i.Status === "🟡 อยู่ระหว่างปรับปรุง").length;
+  const notReadyCount = assessments.filter(i => i.Status === "🔴 ไม่มี" || i.Status === "🔴 ยังไม่พร้อม").length;
+  const naCount = assessments.filter(i => i.Status === "⚪ N/A ไม่เกี่ยวข้อง").length;
   
   const completionPercentage = useMemo(() => {
-    if (totalCount === 0) return 0;
-    return Math.round((readyCount / totalCount) * 100);
-  }, [totalCount, readyCount]);
+    const applicable = totalCount - naCount;
+    if (applicable <= 0) return 0;
+    const pct = Math.round((readyCount / applicable) * 100);
+    return pct > 100 ? 100 : pct;
+  }, [totalCount, naCount, readyCount]);
 
   // Category breakdown stats
   const categoryStats = useMemo(() => {
-    const breakdown: Record<string, { total: number; ready: number; warning: number; not_ready: number }> = {};
+    const breakdown: Record<string, { total: number; ready: number; warning: number; not_ready: number; na: number }> = {};
     assessments.forEach(item => {
       const cat = item.Main_Category || "อื่นๆ";
       if (!breakdown[cat]) {
-        breakdown[cat] = { total: 0, ready: 0, warning: 0, not_ready: 0 };
+        breakdown[cat] = { total: 0, ready: 0, warning: 0, not_ready: 0, na: 0 };
       }
       breakdown[cat].total += 1;
-      if (item.Status === "🟢 พร้อมรับตรวจ") breakdown[cat].ready += 1;
-      else if (item.Status === "🟡 อยู่ระหว่างปรับปรุง") breakdown[cat].warning += 1;
-      else breakdown[cat].not_ready += 1;
+      if (item.Status === "🟢 มีครบ" || item.Status === "🟢 พร้อมรับตรวจ") {
+        breakdown[cat].ready += 1;
+      } else if (item.Status === "🟡 มีบางส่วน" || item.Status === "🟡 อยู่ระหว่างปรับปรุง") {
+        breakdown[cat].warning += 1;
+      } else if (item.Status === "⚪ N/A ไม่เกี่ยวข้อง") {
+        breakdown[cat].na += 1;
+      } else {
+        breakdown[cat].not_ready += 1;
+      }
     });
     return breakdown;
   }, [assessments]);
@@ -141,9 +150,10 @@ export function ReportView({ assessments, hospital }: ReportViewProps) {
         return false;
       }
       // Status filter
-      if (filterStatus === "ready" && item.Status !== "🟢 พร้อมรับตรวจ") return false;
-      if (filterStatus === "warning" && item.Status !== "🟡 อยู่ระหว่างปรับปรุง") return false;
-      if (filterStatus === "not_ready" && item.Status !== "🔴 ยังไม่พร้อม") return false;
+      if (filterStatus === "ready" && !(item.Status === "🟢 มีครบ" || item.Status === "🟢 พร้อมรับตรวจ")) return false;
+      if (filterStatus === "warning" && !(item.Status === "🟡 มีบางส่วน" || item.Status === "🟡 อยู่ระหว่างปรับปรุง")) return false;
+      if (filterStatus === "not_ready" && !(item.Status === "🔴 ไม่มี" || item.Status === "🔴 ยังไม่พร้อม")) return false;
+      if (filterStatus === "na" && item.Status !== "⚪ N/A ไม่เกี่ยวข้อง") return false;
       return true;
     });
   }, [assessments, selectedCategorySelect, filterStatus]);
@@ -416,9 +426,10 @@ export function ReportView({ assessments, hospital }: ReportViewProps) {
                 className="bg-white border border-gray-300 rounded-lg text-xs font-semibold py-1.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#5A5A40] text-[#5A5A40]"
               >
                 <option value="all">แสดงทุกสถานะ</option>
-                <option value="ready">🟢 เฉพาะที่ผ่านพร้อมตรวจ</option>
-                <option value="warning">🟡 เฉพาะที่รอปรับปรุง</option>
-                <option value="not_ready">🔴 เฉพาะที่ยังไม่พร้อม</option>
+                <option value="ready">🟢 เฉพาะที่มีครบ/พร้อมตรวจ</option>
+                <option value="warning">🟡 เฉพาะที่มีบางส่วน/รอปรับปรุง</option>
+                <option value="not_ready">🔴 เฉพาะที่ไม่มี/ยังไม่พร้อม</option>
+                <option value="na">⚪ เฉพาะ N/A ไม่เกี่ยวข้อง</option>
               </select>
             </div>
           </div>
@@ -504,31 +515,38 @@ export function ReportView({ assessments, hospital }: ReportViewProps) {
             </span>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 text-center">
             <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl print:bg-transparent">
-              <div className="text-xs text-stone-500 font-sans">จำนวนตัวชี้วัดทั้งหมด</div>
+              <div className="text-xs text-stone-505 font-sans">จำนวนตัวชี้วัดทั้งหมด</div>
               <div className="text-lg font-bold font-mono tracking-tight text-stone-850 mt-1">{totalCount} ข้อ</div>
             </div>
             <div className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-xl print:bg-transparent print:border-stone-300">
               <div className="text-xs text-emerald-700 font-sans font-bold flex items-center justify-center gap-1">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
-                พร้อมรับตรวจ (🟢)
+                มีครบ (🟢)
               </div>
               <div className="text-lg font-bold font-mono tracking-tight text-emerald-800 mt-1">{readyCount} ข้อ</div>
             </div>
             <div className="p-3 bg-amber-50/50 border border-amber-200 rounded-xl print:bg-transparent print:border-stone-300">
               <div className="text-xs text-amber-700 font-sans font-bold flex items-center justify-center gap-1">
                 <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
-                อยู่ระหว่างปรับปรุง (🟡)
+                มีบางส่วน (🟡)
               </div>
               <div className="text-lg font-bold font-mono tracking-tight text-amber-800 mt-1">{warningCount} ข้อ</div>
             </div>
             <div className="p-3 bg-rose-50/50 border border-rose-200 rounded-xl print:bg-transparent print:border-stone-300">
               <div className="text-xs text-rose-700 font-sans font-bold flex items-center justify-center gap-1">
                 <span className="w-1.5 h-1.5 bg-rose-500 rounded-full"></span>
-                ยังไม่พร้อม (🔴)
+                ไม่มี (🔴)
               </div>
               <div className="text-lg font-bold font-mono tracking-tight text-rose-800 mt-1">{notReadyCount} ข้อ</div>
+            </div>
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl print:bg-transparent print:border-stone-300">
+              <div className="text-xs text-slate-600 font-sans font-bold flex items-center justify-center gap-1">
+                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full"></span>
+                N/A ไม่เกี่ยวข้อง (⚪)
+              </div>
+              <div className="text-lg font-bold font-mono tracking-tight text-slate-700 mt-1">{naCount} ข้อ</div>
             </div>
           </div>
 
@@ -537,7 +555,8 @@ export function ReportView({ assessments, hospital }: ReportViewProps) {
             <h4 className="font-bold text-stone-800 text-xs border-b border-stone-200 pb-1 mb-2">อัตราสถิติแยกตามหมวดหมู่หลัก (Category Statistics Summary)</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-stone-700">
               {Object.entries(categoryStats).map(([catName, stats]: [string, any]) => {
-                const pct = stats.total > 0 ? Math.round((stats.ready / stats.total) * 100) : 0;
+                const applicable = stats.total - stats.na;
+                const pct = applicable > 0 ? Math.round((stats.ready / applicable) * 100) : 0;
                 return (
                   <div key={catName} className="flex items-center justify-between gap-4 py-0.5 border-b border-stone-100 last:border-0">
                     <span className="truncate max-w-[240px] font-medium" title={catName}>{catName}</span>
@@ -586,14 +605,17 @@ export function ReportView({ assessments, hospital }: ReportViewProps) {
                   </tr>
                 ) : (
                   displayedItems.map(item => {
-                    let statusColor = "text-stone-700 bg-stone-50 border-stone-200";
-                    let simpleStatusText = "ยังไม่พร้อม (🔴)";
-                    if (item.Status === "🟢 พร้อมรับตรวจ") {
+                    let statusColor = "text-rose-800 bg-rose-50/60 border-rose-200";
+                    let simpleStatusText = "ไม่มี (🔴)";
+                    if (item.Status === "🟢 มีครบ" || item.Status === "🟢 พร้อมรับตรวจ") {
                       statusColor = "text-emerald-800 bg-emerald-50/60 border-emerald-250";
-                      simpleStatusText = "พร้อมรับตรวจ (🟢)";
-                    } else if (item.Status === "🟡 อยู่ระหว่างปรับปรุง") {
+                      simpleStatusText = "มีครบ (🟢)";
+                    } else if (item.Status === "🟡 มีบางส่วน" || item.Status === "🟡 อยู่ระหว่างปรับปรุง") {
                       statusColor = "text-amber-800 bg-amber-50/60 border-amber-250";
-                      simpleStatusText = "รอปรับปรุง (🟡)";
+                      simpleStatusText = "มีบางส่วน (🟡)";
+                    } else if (item.Status === "⚪ N/A ไม่เกี่ยวข้อง") {
+                      statusColor = "text-slate-600 bg-slate-50 border-slate-200";
+                      simpleStatusText = "N/A (⚪)";
                     }
                     
                     return (
@@ -654,7 +676,7 @@ export function ReportView({ assessments, hospital }: ReportViewProps) {
         <div className="pt-8 mt-12 border-t border-stone-800 space-y-8 page-break-inside-avoid">
           <div className="text-center text-xs font-sans text-stone-700 max-w-xl mx-auto leading-relaxed">
             <p>
-              กองคณะอนุกรรมการตรวจรับรองคุณสมบัติทางกระทรวงสาธารณสุข ขอลงลายมือชื่อพยานความสมบูรณ์
+              ผู้ตรวจประเมินห้องปฏิบัติการทางรังสี MOPH X-Ray Accreditation ขอลงลายมือชื่อพยานความสมบูรณ์
             </p>
             <p>
               ในการจัดทำคำขอประเมินด้วยมาตรฐานระบบงานรังสีการแพทย์ 2569 ฉบับสมบูรณ์ความพร้อมตามบัญชีแนบท้องเรื่อง ณ วันที่ตรวจรับรองข้างต้น
