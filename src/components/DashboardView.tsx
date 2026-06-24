@@ -66,12 +66,6 @@ export default function DashboardView({
     };
   });
 
-  // Hotspot categories (highest count of red/pending status)
-  const hotspotCategories = [...categoriesWithMetrics]
-    .filter(cat => cat.notReady > 0 || cat.inProgress > 0)
-    .sort((a, b) => b.notReady - a.notReady || b.inProgress - a.inProgress)
-    .slice(0, 3);
-
   // Clean category display name
   const getCleanCategoryNumRef = (catName?: string) => {
     if (!catName) return "ไม่ระบุหมวด";
@@ -322,107 +316,6 @@ export default function DashboardView({
             })}
           </div>
 
-        </div>
-
-      </div>
-
-      {/* 🚀 Middle Executive Recommendation Strip */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Spotlighting target items requiring attention */}
-        <div className="lg:col-span-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h3 className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider flex items-center gap-1.5">
-                <AlertCircle className="w-4.5 h-4.5 text-rose-500" />
-                จุดเฝ้าระวังความเสี่ยงสูง (High Priority Action Plan)
-              </h3>
-              <p className="text-xs text-gray-500">
-                หมวดหมู่เกณฑ์ประเมินที่ยังมีรายการสถานะ "🔴 ไม่มี" ค้างอยู่มากที่สุด จำเป็นต้องเร่งประสานผู้รับผิดชอบ
-              </p>
-            </div>
-            
-            <button
-              onClick={() => {
-                onSelectCategory("ทั้งหมด");
-                onSwitchTab("workspace");
-              }}
-              className="text-[#5A5A40] hover:text-[#FFD700] text-xs font-semibold flex items-center gap-1 transition-all"
-            >
-              <span>ดูข้อมูลทั้งหมด</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {hotspotCategories.length === 0 ? (
-              <div className="col-span-3 text-center py-6 text-gray-400 border border-dashed border-gray-200 rounded-xl bg-gray-50">
-                🎉 ยินดีด้วย! ทุกหมวดการประเมินสอดคล้องและผ่านหมด 100% เรียบร้อยแล้ว
-              </div>
-            ) : (
-              hotspotCategories.map((hotspot, i) => (
-                <div
-                  key={i}
-                  className="border border-gray-200 bg-[#f5f5f0]/30 hover:bg-[#f5f5f0]/50 rounded-xl p-4 flex flex-col justify-between transition-all"
-                >
-                  <div>
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-50 border border-rose-100 text-rose-600 uppercase">
-                        เฝ้าระวังอันดับ {i + 1}
-                      </span>
-                      <span className="text-[10px] font-mono bg-white border border-gray-200 px-1.5 rounded text-gray-500 font-semibold">
-                        ไม่มี {hotspot.notReady} ข้อ
-                      </span>
-                    </div>
-                    <h4 className="text-xs font-bold text-gray-800 line-clamp-2 min-h-[32px] font-sans">
-                      {hotspot.name}
-                    </h4>
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-gray-200/60 flex items-center justify-between">
-                    <span className="text-[10px] text-gray-500">
-                      คะแนนความก้าวหน้า
-                    </span>
-                    <span className="text-xs font-bold font-mono text-[#5A5A40]">
-                      {hotspot.score}%
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={() => handleCategoryClick(hotspot.name)}
-                    className="mt-3 bg-[#5A5A40] hover:bg-[#4a4a35] text-white text-[11px] font-semibold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 transition-all cursor-pointer"
-                  >
-                    <span>เข้าไปมอบหมายงาน</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* AI Compliance Summary Card */}
-        <div className="lg:col-span-4 bg-[#5A5A40] text-white rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-          <div className="space-y-2">
-            <span className="inline-flex items-center gap-1 text-[9px] font-bold bg-[#4a4a35] border border-[#6b6b4d] text-[#FFD700] uppercase tracking-wider px-2 py-0.5 rounded font-mono">
-              <Sparkles className="w-3.5 h-3.5 text-[#FFD700] animate-pulse" />
-              AI Executive Summary
-            </span>
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-              สรุปคำชี้แนะระดับบริหาร 2569
-            </h3>
-            <p className="text-xs text-gray-300 leading-relaxed font-sans">
-              จากการวิเคราะห์ฐานข้อมูลแบบองค์รวม: สถานะปัจจุบันพบลำดับเร่งด่วนใน{" "}
-              <span className="text-[#FFD700] font-bold">หมวดที่ 2 และหมวดที่ 5</span> แนะนำให้เจ้าหน้าที่ผู้รับผิดชอบเร่งจัดอัปโหลดไฟล์ "สแกนหลักฐานพนักงาน RSO" และ "ภาพแผงป้องรังสีห้องทดสอบ" เพื่อดันอัตราความพร้อมรวมข้ามผ่านเกณฑ์มาตรฐานกระทรวงสาธารณสุข 80% (ปัจจุบันอยู่ที่ {completionPercentage}%)
-            </p>
-          </div>
-
-          <div className="mt-6 pt-4 border-t border-[#6b6b4d]/80 text-[11px] text-amber-200 leading-normal flex items-start gap-1.5">
-            <AlertCircle className="w-4 h-4 shrink-0 text-[#FFD700] mt-0.5" />
-            <span>
-              <strong>สิทธิ์การเข้าถึงลิงก์:</strong> ลิงก์เก็บข้อมูลใน Column H ควรกำหนดคุณสมบัติเป็นไฟล์แชร์สาธารณะ (Google Drive - Anyone with link can view) เพื่อให้สมาคมนักฟิสิกส์มีคะแนนตรวจรับรองรวดเร็ว
-            </span>
-          </div>
         </div>
 
       </div>
