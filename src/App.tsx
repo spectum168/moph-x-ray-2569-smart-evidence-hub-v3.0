@@ -37,8 +37,8 @@ import DashboardView from "./components/DashboardView";
 import HospitalAuthScreen from "./components/HospitalAuthScreen";
 import AdminPortal from "./components/AdminPortal";
 import AuditorPortal from "./components/AuditorPortal";
-import { ReportView } from "./components/ReportView";
 import { LogOut, FileText } from "lucide-react";
+import ReportView from "./components/ReportView";
 import { clientFetch as fetch } from "./clientStorage";
 
 const sanitizeCategory = (cat: string): string => {
@@ -1487,8 +1487,9 @@ export default function App() {
             }`}
           >
             <FileText className={`w-4 h-4 ${activeTab === "report" ? "text-[#FFD700]" : "text-[#5A5A40]"}`} />
-            <span>📋 เอกสารรายงานการตรวจประเมิน (Assessment Report PDF)</span>
+            <span>📄 📑 เอกสารรายงานการตรวจประเมิน (Assessment Report PDF)</span>
           </button>
+
         </div>
         
         {/* 📑 Sheets Synchronization & CSV Importer Panel (Toggleable Drawer) */}

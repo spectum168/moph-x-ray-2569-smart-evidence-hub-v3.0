@@ -27,8 +27,8 @@ export const initialAssessments: AssessmentItem[] = [
     Success_Indicator: "",
     Status: "🟢 พร้อมรับตรวจ",
     Responsible_Person: "",
-    Evidence_Link: ["https://docs.google.com/document/d/1Af3vaNd0HA3NTeRKNnGliewEkDXA8fz5oKcKQZCKiR8/edit?usp=drive_link"],
-    Auditor_Comment: "",
+    Evidence_Link: ["https://docs.google.com/document/d/1Af3vaNd0HA3NTeRKNnGliewEkDXA8fz5oKcKQZCKiR8/edit?usp=drive_link", "https://drive.google.com/file/d/12pMlANTZ4xml6adlffpMmIfOJH0X6eXq/view?usp=sharing"],
+    Auditor_Comment: "ข้อแนะนำ: เอกสารครบถ้วนสวยงาม แต่เนื้อหาควรตรวจสอบความถูกต้องของข้อความโดยเฉพาะinfographic",
     Last_Update: "19/5/2026"
   },
   {
@@ -36,6 +36,18 @@ export const initialAssessments: AssessmentItem[] = [
     Sub_Category: "1.2 แผนผังการจัดการคุณภาพฯ",
     Item_ID: "1.2.1",
     Criteria_Detail: "มีแผนผังการจัดการคุณภาพในงานรังสีวินิจฉัยและ/หรือรังสีร่วมรักษาที่แสดงให้เห็นความเชื่อมโยงกับการจัดการคุณภาพของหน่วยงานมีการกำหนดหน้าที่ผู้รับผิดชอบ ตามบริบทของสถานพยาบาลหรือโรงพยาบาล (ข้อมูลส่วนนี้แสดงในคู่มือคุณภาพของหน่วยงาน)",
+    Success_Indicator: "",
+    Status: "🟢 พร้อมรับตรวจ",
+    Responsible_Person: "",
+    Evidence_Link: ["https://drive.google.com/file/d/12pMlANTZ4xml6adlffpMmIfOJH0X6eXq/view?usp=sharing"],
+    Auditor_Comment: "",
+    Last_Update: "19/5/2026"
+  },
+  {
+    Main_Category: "1. ข้อกำหนดทั่วไป",
+    Sub_Category: "1.2 แผนผังการจัดการคุณภาพฯ",
+    Item_ID: "1.2.2",
+    Criteria_Detail: "มีการประกาศนโยบายคุณภาพ และเป้าหมายการจัดการคุณภาพให้บุคลากรทราบอย่างทั่วถึง (ข้อมูลส่วนนี้แสดงในคู่มือคุณภาพของหน่วยงาน)",
     Success_Indicator: "",
     Status: "🔴 ยังไม่พร้อม",
     Responsible_Person: "",
@@ -51,11 +63,11 @@ export const initialAssessments: AssessmentItem[] = [
     Item_ID: "2.1.1",
     Criteria_Detail: "มีบุคลากรทางด้านวิชาชีพเพียงพอและปฏิบัติงานได้ตลอดเวลาที่ให้บริการ (ตามบริบทการให้บริการของโรงพยาบาล)",
     Success_Indicator: "",
-    Status: "🔴 ยังไม่พร้อม",
+    Status: "🟡 อยู่ระหว่างปรับปรุง",
     Responsible_Person: "",
-    Evidence_Link: [],
-    Auditor_Comment: "",
-    Last_Update: ""
+    Evidence_Link: ["https://drive.google.com/file/d/12pMlANTZ4xml6adlffpMmIfOJH0X6eXq/view?usp=sharing"],
+    Auditor_Comment: "ข้อแนะนำ: กรณีนอกเวลาราชการทำงานจริงไม่มีผู้ประกอบวิชาชีพเฉพาะทางรังสีวิทยาปฏิบัติงาน แต่สามารถบริหารจัดการให้อยู่ภายใต้การกำกับดูแลได้ตามบริบทของโรงพยาบาล มีข้อสังเกตเกี่ยวกับการ remote operation จากนอกโรงพยาบาลต้องมีการควบคุมความปลอดภัยทางไซเบอร์อย่างรัดกุม อาจมีการกำหนดในแนวทางปฏิบัติหรือเอกสารชี้แจงอื่นๆ",
+    Last_Update: "19/5/2026"
   },
   {
     Main_Category: "2. ทรัพยากรบุคคล",

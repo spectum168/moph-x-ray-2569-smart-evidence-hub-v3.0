@@ -629,10 +629,10 @@ export default function AdminPortal({ onLogoutAdmin, onInspectHospital, onHospit
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <button
               onClick={handleExportBackup}
-              className="bg-stone-750 hover:bg-stone-800 border border-stone-600 text-xs text-amber-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer font-semibold transition"
+              className="bg-stone-750 hover:bg-stone-800 border border-stone-600 text-xs text-amber-200 px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer font-semibold transition w-full sm:w-auto"
               title="ดาวน์โหลดไฟล์สำรองสถาบันและรายการทั้งหมด"
             >
               <Download className="w-3.5 h-3.5 text-amber-400" />
@@ -641,7 +641,7 @@ export default function AdminPortal({ onLogoutAdmin, onInspectHospital, onHospit
 
             <button
               onClick={() => backupInputRef.current?.click()}
-              className="bg-slate-750 hover:bg-slate-800 border border-slate-600 text-xs text-teal-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer font-semibold transition"
+              className="bg-slate-750 hover:bg-slate-800 border border-slate-600 text-xs text-teal-200 px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer font-semibold transition w-full sm:w-auto"
               title="อัปโหลดไฟล์ JSON สำรองข้อมูลเพื่อกู้คืนสถาบันเดิม"
             >
               <Upload className="w-3.5 h-3.5 text-teal-300" />
@@ -658,7 +658,7 @@ export default function AdminPortal({ onLogoutAdmin, onInspectHospital, onHospit
 
             <button
               onClick={onLogoutAdmin}
-              className="bg-[#c13c3c] hover:bg-[#a62c2c] text-white px-4 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-semibold cursor-pointer transition shadow-sm"
+              className="bg-[#c13c3c] hover:bg-[#a62c2c] text-white px-4 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer transition shadow-sm w-full sm:w-auto"
             >
               <LayoutDashboard className="w-3.5 h-3.5 text-yellow-300" />
               <span>กลับสู่ระบบประเมินปกติ</span>

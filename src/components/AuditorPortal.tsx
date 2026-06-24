@@ -120,10 +120,10 @@ export default function AuditorPortal({ onLogoutAuditor, onInspectHospital, show
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <button
               onClick={handleExportSummary}
-              className="bg-[#2e4541] hover:bg-[#253734] border border-[#3b5753] text-xs text-amber-100 px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer font-semibold transition"
+              className="bg-[#2e4541] hover:bg-[#253734] border border-[#3b5753] text-xs text-amber-100 px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer font-semibold transition w-full sm:w-auto"
             >
               <Download className="w-3.5 h-3.5" />
               <span>ส่งออกตารางตรวจประเมิน</span>
@@ -131,7 +131,7 @@ export default function AuditorPortal({ onLogoutAuditor, onInspectHospital, show
 
             <button
               onClick={onLogoutAuditor}
-              className="bg-[#b33a3a] hover:bg-[#962e2e] text-white px-4 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-semibold cursor-pointer transition shadow-sm"
+              className="bg-[#b33a3a] hover:bg-[#962e2e] text-white px-4 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer transition shadow-sm w-full sm:w-auto"
             >
               <LayoutDashboard className="w-3.5 h-3.5 text-yellow-300" />
               <span>ออกจากระบบผู้ประเมิน</span>
