@@ -17,6 +17,10 @@ interface HospitalSummary {
   createdAt?: string;
   progressPercent?: number; // Estimated progress if available
   completedSections?: number;
+  totalItems?: number;
+  reviewedCount?: number;
+  newEvidenceCount?: number;
+  repliedCount?: number;
 }
 
 interface AuditorPortalProps {
@@ -299,6 +303,7 @@ export default function AuditorPortal({ onLogoutAuditor, onInspectHospital, show
                   <th className="p-4 w-12 text-center">สัญลักษณ์</th>
                   <th className="p-4">รหัสโรงพยาบาล (Code)</th>
                   <th className="p-4">ชื่อสถาบันพยาบาลสมาชิกระดับเขต</th>
+                  <th className="p-4">สถานะการตรวจประเมิน</th>
                   <th className="p-4">วันที่ลงทะเบียนร่วมงาน</th>
                   <th className="p-4 w-36 text-right">การตรวจสอบ</th>
                 </tr>
@@ -306,7 +311,7 @@ export default function AuditorPortal({ onLogoutAuditor, onInspectHospital, show
               <tbody className="divide-y divide-gray-150 text-xs">
                 {filteredHospitals.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-8 text-center text-gray-400 font-sans">
+                    <td colSpan={6} className="p-8 text-center text-gray-400 font-sans">
                       🔍 ไม่พบข้อมูลโรงพยาบาลหรือคำค้นหาไม่สอดคล้องกับพอร์ตของผู้ประเมิน
                     </td>
                   </tr>
@@ -329,9 +334,55 @@ export default function AuditorPortal({ onLogoutAuditor, onInspectHospital, show
                           </span>
                         </td>
 
-                        {/* Name */}
-                        <td className="p-4 font-bold text-stone-800 text-[13px]">
-                          {hospital.name}
+                        {/* Name with custom status badges */}
+                        <td className="p-4">
+                          <div className="font-bold text-stone-800 text-[13px]">{hospital.name}</div>
+                          <div className="flex flex-wrap gap-1.5 mt-1.5 select-none">
+                            {/* New Evidence Badge */}
+                            {(hospital.newEvidenceCount || 0) > 0 && (
+                              <span className="bg-amber-50 text-amber-800 border border-amber-250 text-[10px] px-2 py-0.5 rounded-full font-semibold flex items-center gap-1 animate-pulse">
+                                <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                                <span>📎 มีหลักฐานใหม่ ({hospital.newEvidenceCount}) ข้อ</span>
+                              </span>
+                            )}
+                            {/* Hospital Replied Badge */}
+                            {(hospital.repliedCount || 0) > 0 && (
+                              <span className="bg-sky-50 text-sky-800 border border-sky-250 text-[10px] px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 bg-sky-500 rounded-full"></span>
+                                <span>💬 มีการโต้ตอบ ({hospital.repliedCount}) ข้อ</span>
+                              </span>
+                            )}
+                            {/* All clear */}
+                            {(hospital.newEvidenceCount || 0) === 0 && (hospital.repliedCount || 0) === 0 && (hospital.reviewedCount || 0) > 0 && (
+                              <span className="bg-emerald-50 text-emerald-800 border border-emerald-250 text-[10px] px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                                <span>✓ ตรวจเสร็จสิ้นส่วนตัว</span>
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Audit Progress Status */}
+                        <td className="p-4">
+                          {(() => {
+                            const total = hospital.totalItems || 0;
+                            const rev = hospital.reviewedCount || 0;
+                            const pct = total > 0 ? Math.round((rev / total) * 100) : 0;
+                            return (
+                              <div className="space-y-1 w-40 sm:w-48">
+                                <div className="flex justify-between items-center text-[11px] text-gray-500 font-medium">
+                                  <span>ตรวจแล้ว {rev}/{total} ข้อ</span>
+                                  <span className="font-bold text-teal-800">{pct}%</span>
+                                </div>
+                                <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden border border-gray-250/30">
+                                  <div 
+                                    className="bg-[#466964] h-1.5 rounded-full transition-all duration-500" 
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </td>
 
                         {/* Date Registered */}

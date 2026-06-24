@@ -50,6 +50,58 @@ const sanitizeCategory = (cat: string): string => {
   return trimmed;
 };
 
+interface ThreadMessage {
+  sender: "auditor" | "hospital" | "system";
+  text: string;
+  time?: string;
+}
+
+const parseCommentThread = (comment: string): ThreadMessage[] => {
+  if (!comment) return [];
+  const lines = comment.split("\n");
+  const messages: ThreadMessage[] = [];
+  let currentMsg: ThreadMessage | null = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Matches "[🕵️ คณะผู้ตรวจ - 24/06/2569 08:30]: message" or "[🏥 หน่วยงาน - ...]: message"
+    const match = trimmed.match(/^\[(🕵️ คณะผู้ตรวจ|🏥 หน่วยงาน|📢 ระบบ)\s*-\s*([^\]]+)\]:\s*(.*)$/);
+    if (match) {
+      if (currentMsg) {
+        messages.push(currentMsg);
+      }
+      const senderText = match[1];
+      let sender: "auditor" | "hospital" | "system" = "system";
+      if (senderText.includes("ผู้ตรวจ")) {
+        sender = "auditor";
+      } else if (senderText.includes("หน่วยงาน")) {
+        sender = "hospital";
+      }
+
+      currentMsg = {
+        sender,
+        time: match[2],
+        text: match[3],
+      };
+    } else {
+      if (currentMsg) {
+        currentMsg.text += "\n" + trimmed;
+      } else {
+        currentMsg = {
+          sender: "auditor",
+          text: trimmed,
+        };
+      }
+    }
+  }
+  if (currentMsg) {
+    messages.push(currentMsg);
+  }
+  return messages;
+};
+
 export default function App() {
   const [assessments, setAssessments] = useState<AssessmentItem[]>([]);
   const [activeTab, setActiveTab] = useState<"workspace" | "dashboard" | "report">("dashboard");
@@ -101,6 +153,8 @@ export default function App() {
   const [editedResponsible, setEditedResponsible] = useState<string>("");
   const [editedLinks, setEditedLinks] = useState<string[]>([]);
   const [editedComment, setEditedComment] = useState<string>("");
+  const [replyInput, setReplyInput] = useState<string>("");
+  const [isEditingRawComment, setIsEditingRawComment] = useState<boolean>(false);
 
   // AI Advisor States
   const [aiQuery, setAiQuery] = useState<string>("");
@@ -484,6 +538,7 @@ export default function App() {
           Evidence_Link: cleanedLinks,
           Auditor_Comment: editedComment,
           activeSheetName: activeSheetName, // Locked to currently open page/sheet tab
+          byAuditor: sessionStorage.getItem("moph_auditor_creds") !== null,
         }),
       });
 
@@ -506,6 +561,112 @@ export default function App() {
       }
     } catch (err: any) {
       showToast(`❌ ข้อผิดพลาดทางเครือข่าย: ${err.message}`, "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // 💬 ส่งข้อความโต้ตอบ / บันทึกประวัติการคุย
+  const handleSendCommentReply = async () => {
+    if (!replyInput.trim() || !selectedId || !selectedItem) return;
+
+    const senderLabel = sessionStorage.getItem("moph_auditor_creds") !== null
+      ? "🕵️ คณะผู้ตรวจ"
+      : "🏥 หน่วยงาน";
+
+    const thaiTime = new Date().toLocaleString("th-TH", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    });
+
+    const newReplyFormatted = `[${senderLabel} - ${thaiTime}]: ${replyInput.trim()}`;
+    const updatedComment = editedComment.trim()
+      ? `${editedComment}\n${newReplyFormatted}`
+      : newReplyFormatted;
+
+    setEditedComment(updatedComment);
+    setReplyInput("");
+
+    setIsSaving(true);
+    const cleanedLinks = editedLinks.filter((link) => link.trim() !== "");
+    const isAuditor = sessionStorage.getItem("moph_auditor_creds") !== null;
+
+    try {
+      const response = await fetch("/api/assessments/update", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({
+          Item_ID: selectedId,
+          Status: editedStatus,
+          Responsible_Person: editedResponsible,
+          Evidence_Link: cleanedLinks,
+          Auditor_Comment: updatedComment,
+          activeSheetName: activeSheetName,
+          byAuditor: isAuditor,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setAssessments((prev) =>
+            prev.map((item) =>
+              item.Item_ID === selectedId ? result.updatedItem : item
+            )
+          );
+          showToast("💬 บันทึกและส่งข้อความโต้ตอบเรียบร้อยแล้ว!", "success");
+        }
+      } else {
+        showToast("ไม่สามารถส่งข้อความโต้ตอบได้ในขณะนี้", "error");
+      }
+    } catch (err: any) {
+      showToast("ผิดพลาด: " + err.message, "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ✓ ตรวจประเมินแล้ว (Toggle Auditor_Reviewed)
+  const handleToggleReviewed = async (forceVal?: boolean) => {
+    if (!selectedId || !selectedItem) return;
+    setIsSaving(true);
+    const nextReviewedValue = forceVal !== undefined ? forceVal : !selectedItem.Auditor_Reviewed;
+
+    try {
+      const response = await fetch("/api/assessments/update", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({
+          Item_ID: selectedId,
+          activeSheetName: activeSheetName,
+          Auditor_Reviewed: nextReviewedValue,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setAssessments((prev) =>
+            prev.map((item) =>
+              item.Item_ID === selectedId ? result.updatedItem : item
+            )
+          );
+          showToast(
+            nextReviewedValue
+              ? "✓ เปลี่ยนสถานะเกณฑ์เป็น 'ตรวจประเมินแล้ว' เรียบร้อย!"
+              : "เปลี่ยนสถานะเกณฑ์เป็น 'ยังไม่ได้ตรวจ/รอดำเนินการ' เรียบร้อย!",
+            "success"
+          );
+        }
+      } else {
+        showToast("ไม่สามารถอัปเดตสถานะการตรวจประเมินได้", "error");
+      }
+    } catch (err: any) {
+      showToast("ผิดพลาด: " + err.message, "error");
     } finally {
       setIsSaving(false);
     }
@@ -1860,25 +2021,46 @@ export default function App() {
                         </div>
 
                         {/* Status Label Pill */}
-                        <div className="flex items-center space-x-2">
-                          {countLinks > 0 && (
-                            <span className="font-mono text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                              📄 {countLinks} ลิงก์
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <div className="flex items-center space-x-1.5">
+                            {countLinks > 0 && (
+                              <span className="font-mono text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                📄 {countLinks} ลิงก์
+                              </span>
+                            )}
+                            <span
+                              className={`text-[10px] font-bold rounded-full px-2 py-0.5 border ${
+                                item.Status === "🟢 มีครบ" || item.Status === "🟢 พร้อมรับตรวจ"
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-150"
+                                  : item.Status === "🟡 มีบางส่วน" || item.Status === "🟡 อยู่ระหว่างปรับปรุง"
+                                  ? "bg-amber-50 text-amber-700 border-amber-150"
+                                  : item.Status === "⚪ N/A ไม่เกี่ยวข้อง"
+                                  ? "bg-slate-50 text-slate-650 border-slate-200"
+                                  : "bg-rose-50 text-rose-700 border-rose-150"
+                              }`}
+                            >
+                              {item.Status}
                             </span>
-                          )}
-                          <span
-                            className={`text-[10px] font-bold rounded-full px-2 py-0.5 border ${
-                              item.Status === "🟢 มีครบ" || item.Status === "🟢 พร้อมรับตรวจ"
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-150"
-                                : item.Status === "🟡 มีบางส่วน" || item.Status === "🟡 อยู่ระหว่างปรับปรุง"
-                                ? "bg-amber-50 text-amber-700 border-amber-150"
-                                : item.Status === "⚪ N/A ไม่เกี่ยวข้อง"
-                                ? "bg-slate-50 text-slate-650 border-slate-200"
-                                : "bg-rose-50 text-rose-700 border-rose-150"
-                            }`}
-                          >
-                            {item.Status}
-                          </span>
+                          </div>
+                          
+                          {/* Auditor tracking badges */}
+                          <div className="flex items-center gap-1 select-none">
+                            {item.Auditor_Reviewed && (
+                              <span className="bg-emerald-55/80 text-emerald-900 border border-emerald-250 text-[9px] px-1.5 py-0.5 rounded font-bold">
+                                ✓ ตรวจแล้ว
+                              </span>
+                            )}
+                            {item.Has_New_Evidence && (
+                              <span className="bg-amber-50 text-amber-800 border border-amber-250 text-[9px] px-1.5 py-0.5 rounded font-bold animate-pulse">
+                                📎 หลักฐานใหม่
+                              </span>
+                            )}
+                            {item.Hospital_Replied && (
+                              <span className="bg-sky-50 text-sky-800 border border-sky-250 text-[9px] px-1.5 py-0.5 rounded font-bold">
+                                💬 โต้ตอบโต้แย้ง
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                       </div>
@@ -2005,6 +2187,80 @@ export default function App() {
 
                     {/* Scrollable Form Workspace of active item */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white font-sans">
+                      
+                      {/* Tracking Notification Banners */}
+                      {(selectedItem.Auditor_Reviewed || selectedItem.Has_New_Evidence || selectedItem.Hospital_Replied) && (
+                        <div className="space-y-2 select-none">
+                          {selectedItem.Auditor_Reviewed && (
+                            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center gap-2.5 text-xs text-emerald-800">
+                              <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 font-bold">
+                                ✓
+                              </span>
+                              <div>
+                                <span className="font-bold">✓ ตรวจประเมินแล้ว:</span> คณะผู้ตรวจประเมินได้ทำการตรวจประเมินเกณฑ์ข้อนี้เรียบร้อยแล้ว
+                              </div>
+                            </div>
+                          )}
+                          {selectedItem.Has_New_Evidence && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2.5 text-xs text-amber-800 animate-pulse">
+                              <span className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center shrink-0 text-xs">
+                                📎
+                              </span>
+                              <div>
+                                <span className="font-bold">📎 มีหลักฐานใหม่:</span> หน่วยงานได้ทำการอัปโหลดหรือแก้ไขข้อมูลเอกสารหลักฐานอ้างอิงใหม่เรียบร้อยแล้ว
+                              </div>
+                            </div>
+                          )}
+                          {selectedItem.Hospital_Replied && (
+                            <div className="bg-sky-50 border border-sky-200 rounded-xl p-3 flex items-center gap-2.5 text-xs text-sky-800">
+                              <span className="w-5 h-5 rounded-full bg-sky-100 flex items-center justify-center shrink-0 text-xs">
+                                💬
+                              </span>
+                              <div>
+                                <span className="font-bold">💬 มีการโต้ตอบใหม่:</span> หน่วยงานเขียนคอมเม้นต์อธิบายประเด็นหรือโต้ตอบต่อท้ายความคิดเห็นผู้ตรวจ
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Auditor Exclusive Quick Controls */}
+                      {sessionStorage.getItem("moph_auditor_creds") !== null && (
+                        <div className="bg-[#466964]/5 border border-[#466964]/20 p-3.5 rounded-xl space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-[#466964] flex items-center gap-1">
+                              🕵️ แผงประเมินด่วนสำหรับผู้ตรวจ (Auditor Controls)
+                            </span>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleReviewed(true)}
+                              disabled={selectedItem.Auditor_Reviewed}
+                              className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                                selectedItem.Auditor_Reviewed
+                                  ? "bg-emerald-50 text-emerald-800 border-emerald-250 opacity-80"
+                                  : "bg-[#466964] text-white border-[#3e5d59] hover:bg-[#3b5753]"
+                              }`}
+                            >
+                              <span>✓</span>
+                              <span>{selectedItem.Auditor_Reviewed ? "ตรวจประเมินแล้ว" : "ทำเครื่องหมายว่าตรวจแล้ว"}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleToggleReviewed(false)}
+                              disabled={!selectedItem.Auditor_Reviewed && !selectedItem.Has_New_Evidence && !selectedItem.Hospital_Replied}
+                              className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1"
+                              title="ยกเลิกสถานะตรวจประเมิน / รีเซ็ตธงแจ้งเตือน"
+                            >
+                              <span>🔄</span>
+                              <span>คืนค่ารอดำเนินการ</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       
                       {/* Part 1: Green Box for Criteria & Success Indicator & Hyperlink Buttons */}
                       <div className="bg-emerald-50/50 border border-emerald-150 p-4 rounded-xl space-y-3 shadow-inner">
@@ -2145,19 +2401,104 @@ export default function App() {
                           )}
                         </div>
 
-                        {/* Auditor Comment */}
-                        <div>
-                          <label className="block text-xs font-bold text-sky-700 mb-1.5 flex items-center gap-1">
-                            <MessageSquare className="w-3.5 h-3.5 text-sky-600" />
-                            <span>ความคิดเห็นผู้ตรวจประเมิน (Auditor Comment)</span>
-                          </label>
-                          <textarea
-                            value={editedComment}
-                            onChange={(e) => setEditedComment(e.target.value)}
-                            placeholder="สำหรับคณะผู้ตรวจประเมินใช้บันทึกความคิดเห็น ข้อบกพร่อง หรือประเด็นที่ต้องเสนอแนะ..."
-                            rows={3.5}
-                            className="w-full bg-sky-50/50 border border-sky-200 text-gray-800 p-2.5 rounded-lg text-xs focus:ring-1 focus:ring-sky-500 focus:outline-none placeholder:text-gray-450"
-                          />
+                        {/* Auditor & Hospital Comment/Interaction Thread */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-xs font-bold text-sky-700 flex items-center gap-1.5 select-none">
+                              <MessageSquare className="w-3.5 h-3.5 text-sky-600" />
+                              <span>ประวัติการสนทนาโต้ตอบ / ข้อเสนอแนะ</span>
+                            </label>
+                            
+                            <button
+                              type="button"
+                              onClick={() => setIsEditingRawComment(!isEditingRawComment)}
+                              className="text-[10px] text-sky-700 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 border border-sky-150 px-2 py-0.5 rounded font-bold cursor-pointer transition"
+                            >
+                              {isEditingRawComment ? "👁️ ดูแบบประวัติกล่องแชท" : "✏️ แก้ไขข้อความดิบ (Raw)"}
+                            </button>
+                          </div>
+
+                          {isEditingRawComment ? (
+                            <textarea
+                              value={editedComment}
+                              onChange={(e) => setEditedComment(e.target.value)}
+                              placeholder="สำหรับบันทึกความคิดเห็น หรืออธิบายประเด็นที่ต้องเสนอแนะเพิ่มเติม..."
+                              rows={4}
+                              className="w-full bg-sky-50/30 border border-sky-200 text-gray-800 p-2.5 rounded-xl text-xs focus:ring-1 focus:ring-sky-500 focus:outline-none placeholder:text-gray-400 font-mono"
+                            />
+                          ) : (
+                            <div className="space-y-3">
+                              {/* Thread Messages */}
+                              <div className="border border-sky-100/80 bg-slate-50/40 rounded-xl p-3 max-h-56 overflow-y-auto space-y-2">
+                                {parseCommentThread(editedComment).length === 0 ? (
+                                  <div className="text-center py-6 text-gray-400 text-[11px] font-sans italic">
+                                    💬 ยังไม่มีบันทึกความคิดเห็นหรือการสนทนาโต้ตอบข้อนี้
+                                  </div>
+                                ) : (
+                                  parseCommentThread(editedComment).map((msg, idx) => {
+                                    const isAuditor = msg.sender === "auditor";
+                                    return (
+                                      <div
+                                        key={idx}
+                                        className={`flex flex-col max-w-[85%] ${
+                                          isAuditor ? "mr-auto items-start" : "ml-auto items-end"
+                                        }`}
+                                      >
+                                        <div
+                                          className={`px-3 py-2 rounded-xl text-xs leading-relaxed ${
+                                            isAuditor
+                                              ? "bg-[#E6F0EE] text-teal-900 border border-teal-150/40 rounded-tl-none"
+                                              : "bg-amber-50 text-amber-900 border border-amber-150/40 rounded-tr-none"
+                                          }`}
+                                        >
+                                          <div className="font-bold text-[10px] opacity-75 mb-0.5 select-none flex items-center gap-1">
+                                            <span>{isAuditor ? "🕵️ คณะผู้ตรวจประเมิน" : "🏥 หน่วยงานผู้รับตรวจ"}</span>
+                                            {msg.time && (
+                                              <span className="font-normal text-[9px] text-stone-500">
+                                                • {msg.time}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <p className="whitespace-pre-line font-sans break-all">{msg.text}</p>
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+
+                              {/* Simple Reply Box */}
+                              <div className="flex gap-1.5">
+                                <input
+                                  type="text"
+                                  value={replyInput}
+                                  onChange={(e) => setReplyInput(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" && !e.shiftKey) {
+                                      e.preventDefault();
+                                      handleSendCommentReply();
+                                    }
+                                  }}
+                                  placeholder={
+                                    sessionStorage.getItem("moph_auditor_creds") !== null
+                                      ? "พิมพ์คำตอบ/คำวิจารณ์จากผู้ตรวจประเมิน..."
+                                      : "พิมพ์คำอธิบายโต้ตอบหรือชี้แจงประเด็น..."
+                                  }
+                                  className="flex-1 bg-white border border-gray-300 text-gray-800 px-3 py-1.5 rounded-lg text-xs placeholder:text-gray-400 focus:ring-1 focus:ring-teal-555 focus:outline-none"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={handleSendCommentReply}
+                                  disabled={!replyInput.trim()}
+                                  className="bg-sky-600 hover:bg-sky-700 disabled:bg-gray-300 text-white font-extrabold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 transition-all cursor-pointer"
+                                  title="ส่งข้อความสนทนาตอบกลับ"
+                                >
+                                  <Send className="w-3.5 h-3.5" />
+                                  <span>ส่ง</span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* Last Update (Yellow Tinted Display) */}

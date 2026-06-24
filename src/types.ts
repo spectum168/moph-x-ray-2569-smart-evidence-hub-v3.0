@@ -39,6 +39,9 @@ export interface AssessmentItem {
   Evidence_Link: string[];     // Column H (Index 7): ลิงก์อ้างอิงหลักฐาน (เซฟในชีทเป็น JSON String Array)
   Auditor_Comment: string;     // Column I (Index 8): บันทึกข้อเสนอแนะคณะผู้ตรวจ (กรอบสีฟ้า)
   Last_Update: string;         // Column J (Index 9): วันเวลาบันทึกข้อมูลล่าสุดอัตโนมัติ (ช่องสีเหลือง)
+  Auditor_Reviewed?: boolean;  // ตรวจสอบสถานะ: ตรวจสอบ/ประเมินแล้ว
+  Has_New_Evidence?: boolean;  // ตรวจสอบสถานะ: มีเอกสารหลักฐานหรือความคืบหน้าใหม่จากหน่วยงาน
+  Hospital_Replied?: boolean;  // ตรวจสอบสถานะ: หน่วยงานมีข้อความโต้ตอบหรืออธิบายคอมเม้นต์
 }
 
 export type AssessmentDatabase = Record<string, AssessmentItem>;

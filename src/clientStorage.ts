@@ -2,7 +2,9 @@ import { initialAssessments } from "./seedData";
 import { AssessmentItem, AssessmentStatus, normalizeStatus } from "./types";
 import { initializeApp } from "firebase/app";
 import {
-  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   doc,
   getDoc,
   setDoc,
@@ -24,9 +26,13 @@ const firebaseConfig = {
   measurementId: ""
 };
 
-// Initialize Google Firebase SDK
+// Initialize Google Firebase SDK with persistent offline local cache support
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
+}, firebaseConfig.firestoreDatabaseId);
 
 enum OperationType {
   CREATE = "create",
@@ -713,7 +719,39 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
           upline: h.upline || "auditor",
           createdAt: h.createdAt
         }));
-      return jsonResponse({ success: true, hospitals: filtered });
+
+      const filteredWithStats = [];
+      for (const h of filtered) {
+        let totalItems = 0;
+        let reviewedCount = 0;
+        let newEvidenceCount = 0;
+        let repliedCount = 0;
+
+        try {
+          const sheets = await dbGetSheetNames(h.code);
+          for (const sheetName of sheets) {
+            const items = await dbGetAssessments(h.code, sheetName);
+            totalItems += items.length;
+            items.forEach(item => {
+              if (item.Auditor_Reviewed) reviewedCount++;
+              if (item.Has_New_Evidence) newEvidenceCount++;
+              if (item.Hospital_Replied) repliedCount++;
+            });
+          }
+        } catch (e) {
+          console.error(`Failed to calculate stats for hospital ${h.code}:`, e);
+        }
+
+        filteredWithStats.push({
+          ...h,
+          totalItems,
+          reviewedCount,
+          newEvidenceCount,
+          repliedCount,
+        });
+      }
+
+      return jsonResponse({ success: true, hospitals: filteredWithStats });
     }
 
     // 8. ADMIN QUERY ALL HOSPITALS (POST)
@@ -1110,7 +1148,7 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
 
     // 23. HOSPITAL UPDATE INDIVIDUAL ASSESSMENT ITEM (POST)
     if (pathname === "/api/assessments/update" && method === "POST") {
-      const { Item_ID, Status, Responsible_Person, Evidence_Link, Auditor_Comment, activeSheetName } = body;
+      const { Item_ID, Status, Responsible_Person, Evidence_Link, Auditor_Comment, activeSheetName, byAuditor, Auditor_Reviewed } = body;
       const sheetName = activeSheetName || "ปี 2569";
       if (!Item_ID) {
         return errorResponse("Missing Item_ID parameter.");
@@ -1122,12 +1160,54 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
         return errorResponse(`Assessment item with ID ${Item_ID} not found in sheet ${sheetName}.`, 404);
       }
 
+      const oldItem = currentItems[idx];
+      const newStatus = (Status || oldItem.Status) as AssessmentStatus;
+      const newResp = Responsible_Person !== undefined ? Responsible_Person : oldItem.Responsible_Person;
+      const newLinks = Array.isArray(Evidence_Link) ? Evidence_Link : oldItem.Evidence_Link;
+      const newComment = Auditor_Comment !== undefined ? Auditor_Comment : oldItem.Auditor_Comment;
+
+      let nextAuditorReviewed = oldItem.Auditor_Reviewed || false;
+      let nextHasNewEvidence = oldItem.Has_New_Evidence || false;
+      let nextHospitalReplied = oldItem.Hospital_Replied || false;
+
+      if (Auditor_Reviewed !== undefined) {
+        nextAuditorReviewed = Auditor_Reviewed;
+        if (nextAuditorReviewed) {
+          nextHasNewEvidence = false;
+          nextHospitalReplied = false;
+        }
+      } else if (byAuditor) {
+        // Updated by Auditor
+        nextAuditorReviewed = true;
+        nextHasNewEvidence = false;
+        nextHospitalReplied = false;
+      } else {
+        // Updated by Hospital/Organization
+        const isLinksChanged = JSON.stringify(newLinks) !== JSON.stringify(oldItem.Evidence_Link || []);
+        const isStatusChanged = newStatus !== oldItem.Status;
+        const isRespChanged = newResp !== oldItem.Responsible_Person;
+        
+        if (isLinksChanged || isStatusChanged || isRespChanged) {
+          nextHasNewEvidence = true;
+          nextAuditorReviewed = false;
+        }
+
+        const isCommentChanged = newComment !== (oldItem.Auditor_Comment || "");
+        if (isCommentChanged) {
+          nextHospitalReplied = true;
+          nextAuditorReviewed = false;
+        }
+      }
+
       const updatedItem = {
-        ...currentItems[idx],
-        Status: (Status || currentItems[idx].Status) as AssessmentStatus,
-        Responsible_Person: Responsible_Person !== undefined ? Responsible_Person : currentItems[idx].Responsible_Person,
-        Evidence_Link: Array.isArray(Evidence_Link) ? Evidence_Link : currentItems[idx].Evidence_Link,
-        Auditor_Comment: Auditor_Comment !== undefined ? Auditor_Comment : currentItems[idx].Auditor_Comment,
+        ...oldItem,
+        Status: newStatus,
+        Responsible_Person: newResp,
+        Evidence_Link: newLinks,
+        Auditor_Comment: newComment,
+        Auditor_Reviewed: nextAuditorReviewed,
+        Has_New_Evidence: nextHasNewEvidence,
+        Hospital_Replied: nextHospitalReplied,
         Last_Update: new Date().toISOString()
       };
 
@@ -1164,6 +1244,9 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
           Responsible_Person: imported.Responsible_Person || "",
           Evidence_Link: Array.isArray(imported.Evidence_Link) ? imported.Evidence_Link : [],
           Auditor_Comment: imported.Auditor_Comment || "",
+          Auditor_Reviewed: imported.Auditor_Reviewed || false,
+          Has_New_Evidence: imported.Has_New_Evidence || false,
+          Hospital_Replied: imported.Hospital_Replied || false,
           Last_Update: imported.Last_Update || new Date().toISOString()
         };
         if (idx !== -1) {
@@ -1195,6 +1278,9 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
         Responsible_Person: imported.Responsible_Person || "",
         Evidence_Link: Array.isArray(imported.Evidence_Link) ? imported.Evidence_Link : [],
         Auditor_Comment: imported.Auditor_Comment || "",
+        Auditor_Reviewed: imported.Auditor_Reviewed || false,
+        Has_New_Evidence: imported.Has_New_Evidence || false,
+        Hospital_Replied: imported.Hospital_Replied || false,
         Last_Update: imported.Last_Update || new Date().toISOString()
       }));
 
