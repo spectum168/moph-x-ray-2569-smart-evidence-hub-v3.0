@@ -7,7 +7,7 @@ import React, { useState, useEffect } from "react";
 import { 
   ShieldAlert, Trash2, Edit3, Save, X, Search, Lock, PlusCircle, 
   Download, Upload, RefreshCw, Key, Building2, Calendar, LayoutDashboard, Database, HelpCircle,
-  Sparkles, Eye
+  Sparkles, Eye, Menu, ChevronUp, ChevronDown
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { clientFetch as fetch } from "../clientStorage";
@@ -41,6 +41,7 @@ export default function AdminPortal({ onLogoutAdmin, onInspectHospital, onHospit
   const [auditors, setAuditors] = useState<any[]>([]);
   const [adminTab, setAdminTab] = useState<"hospitals" | "auditors" | "tree" | "admins">("hospitals");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isHeaderExpanded, setIsHeaderExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const backupInputRef = React.useRef<HTMLInputElement>(null);
   
@@ -610,60 +611,131 @@ export default function AdminPortal({ onLogoutAdmin, onInspectHospital, onHospit
   return (
     <div className="min-h-screen bg-[#f5f5f0] text-[#333333] font-sans selection:bg-[#5A5A40] selection:text-white">
       {/* Admin Top Header Bar */}
-      <header className="bg-[#4a4a35] text-white py-4 px-6 border-b border-[#5a5a40] shadow-md sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-[#FFD700] p-2 rounded-xl text-stone-900 shadow-inner shrink-0">
-              <ShieldAlert className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 leading-none">
-                <span className="text-[10px] font-bold tracking-widest text-amber-300 uppercase bg-[#333324] border border-[#5A5A40] px-2 py-0.5 rounded">
-                  Super Administrative Console
-                </span>
-                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping"></span>
+      <header className="bg-[#4a4a35] text-white py-3 px-4 sm:px-6 border-b border-[#5a5a40] shadow-md sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto">
+          {/* Top Main Row always visible on all screen sizes, with expand/collapse toggle on mobile */}
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2.5">
+              <div className="bg-[#FFD700] p-1.5 sm:p-2 rounded-xl text-stone-900 shadow-inner shrink-0">
+                <ShieldAlert className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <h1 className="text-base font-bold tracking-tight text-white mt-1">
-                ระบบจัดการสถาบันความพร้อมรังสีวิทยา xraymaetha
-              </h1>
+              <div>
+                <div className="flex items-center gap-1.5 leading-none flex-wrap">
+                  <span className="text-[9px] sm:text-[10px] font-bold tracking-widest text-amber-300 uppercase bg-[#333324] border border-[#5A5A40] px-1.5 py-0.5 rounded">
+                    Super Administrative Console
+                  </span>
+                </div>
+                <h1 className="text-sm sm:text-base font-bold tracking-tight text-white mt-1 hidden sm:block">
+                  ระบบจัดการสถาบันความพร้อมรังสีวิทยา xraymaetha
+                </h1>
+                <h1 className="text-xs font-bold tracking-tight text-white mt-1 sm:hidden">
+                  แอดมิน: xraymaetha
+                </h1>
+              </div>
+            </div>
+
+            {/* Mobile Menu Toggle Button */}
+            <button
+              onClick={() => setIsHeaderExpanded(!isHeaderExpanded)}
+              className="sm:hidden p-1.5 text-white hover:bg-stone-800 rounded-lg border border-stone-600 transition cursor-pointer flex items-center gap-1 text-[11px] font-bold"
+              title="สลับเมนูควบคุม"
+            >
+              <span>{isHeaderExpanded ? "ปิดเมนู" : "เมนูควบคุม"}</span>
+              {isHeaderExpanded ? <ChevronUp className="w-4 h-4 text-yellow-300" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+
+            {/* Desktop Action Buttons - Hidden on Mobile */}
+            <div className="hidden sm:flex items-center gap-2">
+              <button
+                onClick={handleExportBackup}
+                className="bg-stone-750 hover:bg-stone-800 border border-stone-600 text-xs text-amber-200 px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer font-semibold transition"
+                title="ดาวน์โหลดไฟล์สำรองสถาบันและรายการทั้งหมด"
+              >
+                <Download className="w-3.5 h-3.5 text-amber-400" />
+                <span>สำรองฐานข้อมูลสถาบัน</span>
+              </button>
+
+              <button
+                onClick={() => backupInputRef.current?.click()}
+                className="bg-slate-750 hover:bg-slate-800 border border-slate-600 text-xs text-teal-200 px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer font-semibold transition"
+                title="อัปโหลดไฟล์ JSON สำรองข้อมูลเพื่อกู้คืนสถาบันเดิม"
+              >
+                <Upload className="w-3.5 h-3.5 text-teal-300" />
+                <span>กู้คืนข้อมูลสำรอง (Restore)</span>
+              </button>
+              
+              <input
+                type="file"
+                ref={backupInputRef}
+                onChange={handleImportBackup}
+                accept=".json"
+                className="hidden"
+              />
+
+              <button
+                onClick={onLogoutAdmin}
+                className="bg-[#c13c3c] hover:bg-[#a62c2c] text-white px-4 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer transition shadow-sm"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5 text-yellow-300" />
+                <span>กลับสู่ระบบประเมินปกติ</span>
+              </button>
             </div>
           </div>
-          
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-            <button
-              onClick={handleExportBackup}
-              className="bg-stone-750 hover:bg-stone-800 border border-stone-600 text-xs text-amber-200 px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer font-semibold transition w-full sm:w-auto"
-              title="ดาวน์โหลดไฟล์สำรองสถาบันและรายการทั้งหมด"
-            >
-              <Download className="w-3.5 h-3.5 text-amber-400" />
-              <span>สำรองฐานข้อมูลสถาบัน</span>
-            </button>
 
-            <button
-              onClick={() => backupInputRef.current?.click()}
-              className="bg-slate-750 hover:bg-slate-800 border border-slate-600 text-xs text-teal-200 px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer font-semibold transition w-full sm:w-auto"
-              title="อัปโหลดไฟล์ JSON สำรองข้อมูลเพื่อกู้คืนสถาบันเดิม"
-            >
-              <Upload className="w-3.5 h-3.5 text-teal-300" />
-              <span>กู้คืนข้อมูลสำรอง (Restore)</span>
-            </button>
-            
-            <input
-              type="file"
-              ref={backupInputRef}
-              onChange={handleImportBackup}
-              accept=".json"
-              className="hidden"
-            />
+          {/* Mobile Expanded Menu Section */}
+          {isHeaderExpanded && (
+            <div className="sm:hidden mt-3 pt-3 border-t border-[#5a5a40] space-y-3">
+              <div className="bg-[#333324] p-2.5 rounded-lg border border-[#5a5a40]">
+                <p className="text-[11px] text-amber-300">ระบบจัดการแอดมินกลาง:</p>
+                <p className="text-xs font-semibold text-white mt-0.5">
+                  สถาบันความพร้อมรังสีวิทยา xraymaetha
+                </p>
+              </div>
 
-            <button
-              onClick={onLogoutAdmin}
-              className="bg-[#c13c3c] hover:bg-[#a62c2c] text-white px-4 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer transition shadow-sm w-full sm:w-auto"
-            >
-              <LayoutDashboard className="w-3.5 h-3.5 text-yellow-300" />
-              <span>กลับสู่ระบบประเมินปกติ</span>
-            </button>
-          </div>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    handleExportBackup();
+                    setIsHeaderExpanded(false);
+                  }}
+                  className="bg-stone-750 hover:bg-stone-800 border border-stone-600 text-xs text-amber-250 py-2 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer font-semibold transition w-full"
+                >
+                  <Download className="w-4 h-4 text-amber-400" />
+                  <span>สำรองฐานข้อมูลสถาบัน</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    backupInputRef.current?.click();
+                    setIsHeaderExpanded(false);
+                  }}
+                  className="bg-slate-750 hover:bg-slate-800 border border-slate-600 text-xs text-teal-250 py-2 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer font-semibold transition w-full"
+                >
+                  <Upload className="w-4 h-4 text-teal-300" />
+                  <span>กู้คืนข้อมูลสำรอง (Restore)</span>
+                </button>
+                
+                <input
+                  type="file"
+                  ref={backupInputRef}
+                  onChange={handleImportBackup}
+                  accept=".json"
+                  className="hidden"
+                />
+
+                <button
+                  onClick={() => {
+                    onLogoutAdmin();
+                    setIsHeaderExpanded(false);
+                  }}
+                  className="bg-[#c13c3c] hover:bg-[#a62c2c] text-white py-2 rounded-lg flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer transition shadow-sm w-full"
+                >
+                  <LayoutDashboard className="w-4 h-4 text-yellow-300" />
+                  <span>กลับสู่ระบบประเมินปกติ</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -1000,7 +1072,7 @@ export default function AdminPortal({ onLogoutAdmin, onInspectHospital, onHospit
                                 <Calendar className="w-3.5 h-3.5 text-stone-300 shrink-0" />
                                 <span>
                                   {hospital.createdAt 
-                                    ? new Date(hospital.createdAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }) 
+                                    ? new Date(hospital.createdAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Bangkok' }) 
                                     : "ตั้งต้น"}
                                 </span>
                               </div>

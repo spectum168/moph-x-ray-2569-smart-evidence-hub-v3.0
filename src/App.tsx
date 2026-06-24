@@ -1098,8 +1098,8 @@ export default function App() {
         hour: "2-digit",
         minute: "2-digit",
         second: "2-digit",
-        timeZone: "UTC"
-      }) + " น. (UTC)";
+        timeZone: "Asia/Bangkok"
+      }) + " น. (GMT+7)";
     } catch {
       return isoString;
     }

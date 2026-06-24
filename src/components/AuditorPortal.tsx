@@ -7,7 +7,7 @@ import React, { useState, useEffect } from "react";
 import { 
   Search, ShieldAlert, BookOpen, FileCheck, CheckCircle2, AlertCircle, 
   RefreshCw, LayoutDashboard, Database, HelpCircle, ArrowRight, Eye, Download,
-  Sparkles
+  Sparkles, Menu, ChevronUp, ChevronDown
 } from "lucide-react";
 import { clientFetch as fetch } from "../clientStorage";
 
@@ -29,6 +29,7 @@ export default function AuditorPortal({ onLogoutAuditor, onInspectHospital, show
   const [hospitals, setHospitals] = useState<HospitalSummary[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isHeaderExpanded, setIsHeaderExpanded] = useState(false);
 
   let auditorCreds: any = {};
   try {
@@ -98,45 +99,97 @@ export default function AuditorPortal({ onLogoutAuditor, onInspectHospital, show
   return (
     <div className="min-h-screen bg-[#f5f5f0] text-[#333333] font-sans selection:bg-[#5A5A40] selection:text-white">
       {/* Auditor Header Bar */}
-      <header className="bg-[#466964] text-white py-4 px-6 border-b border-[#3b5753] shadow-md sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-[#FFD700] p-2 rounded-xl text-stone-900 shadow-inner shrink-0">
-              <FileCheck className="w-5 h-5 text-emerald-800" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 leading-none">
-                <span className="text-[10px] font-bold tracking-widest text-[#FFD700] uppercase bg-[#2e4541] border border-[#3b5753] px-2 py-0.5 rounded">
-                  MOPH Regional Auditor Portal
-                </span>
-                <span className="text-[10px] text-teal-300 font-mono font-bold">
-                  (@{username})
-                </span>
-                <span className="w-1.5 h-1.5 bg-yellow-300 rounded-full animate-ping"></span>
+      <header className="bg-[#466964] text-white py-3 px-4 sm:px-6 border-b border-[#3b5753] shadow-md sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto">
+          {/* Top Main Row always visible on all screen sizes, with expand/collapse toggle on mobile */}
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2.5">
+              <div className="bg-[#FFD700] p-1.5 sm:p-2 rounded-xl text-stone-900 shadow-inner shrink-0">
+                <FileCheck className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-800" />
               </div>
-              <h1 className="text-base font-bold tracking-tight text-white mt-1">
-                บัญชีผู้แนะนำ: {username === "auditor" ? "ผู้ประเมินหลักของเขต" : (auditorCreds.name || "ผู้ประเมินรหัส " + username)}
-              </h1>
+              <div>
+                <div className="flex items-center gap-1.5 leading-none flex-wrap">
+                  <span className="text-[9px] sm:text-[10px] font-bold tracking-widest text-[#FFD700] uppercase bg-[#2e4541] border border-[#3b5753] px-1.5 py-0.5 rounded">
+                    MOPH Regional Auditor Portal
+                  </span>
+                  <span className="text-[9px] sm:text-[10px] text-teal-300 font-mono font-bold">
+                    (@{username})
+                  </span>
+                </div>
+                <h1 className="text-sm sm:text-base font-bold tracking-tight text-white mt-1 hidden sm:block">
+                  บัญชีผู้แนะนำ: {username === "auditor" ? "ผู้ประเมินหลักของเขต" : (auditorCreds.name || "ผู้ประเมินรหัส " + username)}
+                </h1>
+                <h1 className="text-xs font-bold tracking-tight text-white mt-1 sm:hidden">
+                  ผู้ประเมิน: {username === "auditor" ? "หลักของเขต" : (auditorCreds.name || username)}
+                </h1>
+              </div>
             </div>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+
+            {/* Mobile Menu Toggle Button */}
             <button
-              onClick={handleExportSummary}
-              className="bg-[#2e4541] hover:bg-[#253734] border border-[#3b5753] text-xs text-amber-100 px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer font-semibold transition w-full sm:w-auto"
+              onClick={() => setIsHeaderExpanded(!isHeaderExpanded)}
+              className="sm:hidden p-1.5 text-white hover:bg-[#2e4541] rounded-lg border border-[#3b5753] transition cursor-pointer flex items-center gap-1 text-[11px] font-bold"
+              title="สลับเมนูควบคุม"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>ส่งออกตารางตรวจประเมิน</span>
+              <span>{isHeaderExpanded ? "ปิดเมนู" : "เมนูควบคุม"}</span>
+              {isHeaderExpanded ? <ChevronUp className="w-4 h-4 text-yellow-300" /> : <ChevronDown className="w-4 h-4" />}
             </button>
 
-            <button
-              onClick={onLogoutAuditor}
-              className="bg-[#b33a3a] hover:bg-[#962e2e] text-white px-4 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer transition shadow-sm w-full sm:w-auto"
-            >
-              <LayoutDashboard className="w-3.5 h-3.5 text-yellow-300" />
-              <span>ออกจากระบบผู้ประเมิน</span>
-            </button>
+            {/* Desktop Action Buttons - Hidden on Mobile */}
+            <div className="hidden sm:flex items-center gap-2">
+              <button
+                onClick={handleExportSummary}
+                className="bg-[#2e4541] hover:bg-[#253734] border border-[#3b5753] text-xs text-amber-100 px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer font-semibold transition"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>ส่งออกตารางตรวจประเมิน</span>
+              </button>
+
+              <button
+                onClick={onLogoutAuditor}
+                className="bg-[#b33a3a] hover:bg-[#962e2e] text-white px-4 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-semibold cursor-pointer transition shadow-sm"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5 text-yellow-300" />
+                <span>ออกจากระบบผู้ประเมิน</span>
+              </button>
+            </div>
           </div>
+
+          {/* Mobile Expanded Menu Section */}
+          {isHeaderExpanded && (
+            <div className="sm:hidden mt-3 pt-3 border-t border-[#3b5753] space-y-3">
+              <div className="bg-[#2e4541] p-2.5 rounded-lg border border-[#3b5753]">
+                <p className="text-[11px] text-teal-300">เข้าใช้งานด้วยระบบผู้ประเมิน:</p>
+                <p className="text-xs font-semibold text-white mt-0.5">
+                  {username === "auditor" ? "ผู้ประเมินหลักของเขต" : (auditorCreds.name || "ผู้ประเมินรหัส " + username)}
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    handleExportSummary();
+                    setIsHeaderExpanded(false);
+                  }}
+                  className="bg-[#2e4541] hover:bg-[#253734] border border-[#3b5753] text-xs text-amber-100 py-2 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer font-semibold transition w-full"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>ส่งออกตารางตรวจประเมิน</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    onLogoutAuditor();
+                    setIsHeaderExpanded(false);
+                  }}
+                  className="bg-[#b33a3a] hover:bg-[#962e2e] text-white py-2 rounded-lg flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer transition shadow-sm w-full"
+                >
+                  <LayoutDashboard className="w-4 h-4 text-yellow-300" />
+                  <span>ออกจากระบบผู้ประเมิน</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -284,7 +337,7 @@ export default function AuditorPortal({ onLogoutAuditor, onInspectHospital, show
                         {/* Date Registered */}
                         <td className="p-4 text-stone-500 font-mono text-[11px]">
                           {hospital.createdAt 
-                            ? new Date(hospital.createdAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }) 
+                            ? new Date(hospital.createdAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Bangkok' }) 
                             : "ตั้งต้นระบบ"}
                         </td>
 
