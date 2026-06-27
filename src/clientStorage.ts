@@ -1064,11 +1064,11 @@ export async function clientFetch(input: RequestInfo | URL, init?: RequestInit):
     // 18. ADMIN DELETE HOSPITAL (POST)
     if (pathname === "/api/admin/hospitals/delete" && method === "POST") {
       const admins = await dbGetAdmins();
-      const { username, password, targetCode } = body;
+      const { username, password, targetCode, code } = body;
       const isAdminUser = admins.some(a => a.username === username?.trim().toLowerCase() && a.password === password?.trim());
       if (!isAdminUser) return errorResponse("ไม่มีสิทธิ์เข้าถึงข้อมูลผู้ดูแลระบบ", 403);
 
-      const cleanTarget = (targetCode || "").trim().toLowerCase();
+      const cleanTarget = (targetCode || code || "").trim().toLowerCase();
       const hospitalsList = await dbGetHospitals();
       const idx = hospitalsList.findIndex(h => h.code === cleanTarget);
       if (idx === -1) {
