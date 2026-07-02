@@ -23,28 +23,22 @@ interface ReportViewProps {
 export default function ReportView({ assessments, hospital }: ReportViewProps) {
   // --- Form Local States ---
   // Part 1: Institution Info
-  const [hospitalName, setHospitalName] = useState(hospital?.name || "โรงพยาบาลทั่วไปกึ่งตัวอย่าง");
-  const [province, setProvince] = useState("กรุงเทพมหานคร");
-  const [bedSize, setBedSize] = useState("250 เตียง");
-  const [assessmentDate, setAssessmentDate] = useState(() => {
-    return new Date().toLocaleDateString("th-TH", {
-      year: "numeric",
-      month: "long",
-      day: "numeric"
-    });
-  });
+  const [hospitalName, setHospitalName] = useState("");
+  const [province, setProvince] = useState("");
+  const [bedSize, setBedSize] = useState("");
+  const [assessmentDate, setAssessmentDate] = useState("");
 
   // Part 2: Auditor 1 (President)
-  const [auditor1Name, setAuditor1Name] = useState("นายแพทย์สมชาย รักษาดี");
-  const [auditor1Id, setAuditor1Id] = useState("อ.1234/2565");
-  const [auditor1Position, setAuditor1Position] = useState("ประธานคณะผู้ตรวจประเมิน");
-  const [auditor1Org, setAuditor1Org] = useState("สำนักมาตรฐานบริการรังสีวิทยา");
+  const [auditor1Name, setAuditor1Name] = useState("");
+  const [auditor1Id, setAuditor1Id] = useState("");
+  const [auditor1Position, setAuditor1Position] = useState("");
+  const [auditor1Org, setAuditor1Org] = useState("");
 
   // Part 3: Auditor 2
-  const [auditor2Name, setAuditor2Name] = useState("นางสาววิไล วงศ์วาน");
-  const [auditor2Id, setAuditor2Id] = useState("พ.5678/2566");
-  const [auditor2Position, setAuditor2Position] = useState("ผู้ตรวจประเมินทางเทคนิค");
-  const [auditor2Org, setAuditor2Org] = useState("กลุ่มงานรังสีการแพทย์ กรมวิทยาศาสตร์การแพทย์");
+  const [auditor2Name, setAuditor2Name] = useState("");
+  const [auditor2Id, setAuditor2Id] = useState("");
+  const [auditor2Position, setAuditor2Position] = useState("");
+  const [auditor2Org, setAuditor2Org] = useState("");
 
   // --- Statistics Calculation ---
   const totalItems = assessments.length;
@@ -191,6 +185,7 @@ export default function ReportView({ assessments, hospital }: ReportViewProps) {
                   type="text"
                   value={hospitalName}
                   onChange={(e) => setHospitalName(e.target.value)}
+                  autoComplete="off"
                   className="w-full text-xs px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A5A40] font-medium"
                 />
               </div>
@@ -200,6 +195,7 @@ export default function ReportView({ assessments, hospital }: ReportViewProps) {
                   type="text"
                   value={province}
                   onChange={(e) => setProvince(e.target.value)}
+                  autoComplete="off"
                   className="w-full text-xs px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A5A40]"
                 />
               </div>
@@ -209,6 +205,7 @@ export default function ReportView({ assessments, hospital }: ReportViewProps) {
                   type="text"
                   value={bedSize}
                   onChange={(e) => setBedSize(e.target.value)}
+                  autoComplete="off"
                   className="w-full text-xs px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A5A40]"
                 />
               </div>
@@ -218,6 +215,7 @@ export default function ReportView({ assessments, hospital }: ReportViewProps) {
                   type="text"
                   value={assessmentDate}
                   onChange={(e) => setAssessmentDate(e.target.value)}
+                  autoComplete="off"
                   className="w-full text-xs px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A5A40] font-semibold"
                 />
               </div>
@@ -237,6 +235,7 @@ export default function ReportView({ assessments, hospital }: ReportViewProps) {
                   type="text"
                   value={auditor1Name}
                   onChange={(e) => setAuditor1Name(e.target.value)}
+                  autoComplete="off"
                   className="w-full text-xs px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A5A40] font-semibold text-emerald-800"
                 />
               </div>
@@ -246,6 +245,7 @@ export default function ReportView({ assessments, hospital }: ReportViewProps) {
                   type="text"
                   value={auditor1Id}
                   onChange={(e) => setAuditor1Id(e.target.value)}
+                  autoComplete="off"
                   className="w-full text-xs px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A5A40]"
                 />
               </div>
@@ -255,6 +255,7 @@ export default function ReportView({ assessments, hospital }: ReportViewProps) {
                   type="text"
                   value={auditor1Position}
                   onChange={(e) => setAuditor1Position(e.target.value)}
+                  autoComplete="off"
                   className="w-full text-xs px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A5A40]"
                 />
               </div>
@@ -264,6 +265,7 @@ export default function ReportView({ assessments, hospital }: ReportViewProps) {
                   type="text"
                   value={auditor1Org}
                   onChange={(e) => setAuditor1Org(e.target.value)}
+                  autoComplete="off"
                   className="w-full text-xs px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A5A40]"
                 />
               </div>
@@ -283,6 +285,7 @@ export default function ReportView({ assessments, hospital }: ReportViewProps) {
                   type="text"
                   value={auditor2Name}
                   onChange={(e) => setAuditor2Name(e.target.value)}
+                  autoComplete="off"
                   className="w-full text-xs px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A5A40] font-semibold text-blue-800"
                 />
               </div>
@@ -292,6 +295,7 @@ export default function ReportView({ assessments, hospital }: ReportViewProps) {
                   type="text"
                   value={auditor2Id}
                   onChange={(e) => setAuditor2Id(e.target.value)}
+                  autoComplete="off"
                   className="w-full text-xs px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A5A40]"
                 />
               </div>
@@ -301,6 +305,7 @@ export default function ReportView({ assessments, hospital }: ReportViewProps) {
                   type="text"
                   value={auditor2Position}
                   onChange={(e) => setAuditor2Position(e.target.value)}
+                  autoComplete="off"
                   className="w-full text-xs px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A5A40]"
                 />
               </div>
@@ -310,6 +315,7 @@ export default function ReportView({ assessments, hospital }: ReportViewProps) {
                   type="text"
                   value={auditor2Org}
                   onChange={(e) => setAuditor2Org(e.target.value)}
+                  autoComplete="off"
                   className="w-full text-xs px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5A5A40]"
                 />
               </div>
